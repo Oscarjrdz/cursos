@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ---------------------------------------------------------------------------
+// TENANTS
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  name        String
+  maxStudents Int          @default(50)
+  status      TenantStatus @default(ACTIVE)
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  users         User[]
+  tenantCourses TenantCourse[]
+
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+// ---------------------------------------------------------------------------
+// USERS
+// ---------------------------------------------------------------------------
+
+model User {
+  id                    String     @id @default(cuid())
+  email                 String     @unique
+  name                  String
+  avatarUrl             String?
+  role                  UserRole
+  tenantId              String?
+  subscriptionExpiresAt DateTime?
+  status                UserStatus @default(ACTIVE)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  tenant            Tenant?           @relation(fields: [tenantId], references: [id])
+  enrollments       Enrollment[]
+  lessonCompletions LessonCompletion[]
+  userAchievements  UserAchievement[]
+  streak            Streak?
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  SUSPENDED
+}
+
+// ---------------------------------------------------------------------------
+// COURSES
+// ---------------------------------------------------------------------------
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  coverUrl    String?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules       Module[]
+  tenantCourses TenantCourse[]
+  enrollments   Enrollment[]
+
+  @@map("courses")
+}
+
+model TenantCourse {
+  tenantId   String
+  courseId   String
+  assignedAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@id([tenantId, courseId])
+  @@map("tenant_courses")
+}
+
+// ---------------------------------------------------------------------------
+// MODULES & LESSONS
+// ---------------------------------------------------------------------------
+
+model Module {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  order     Int
+  createdAt DateTime @default(now())
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String      @id @default(cuid())
+  moduleId    String
+  title       String
+  order       Int
+  contentType ContentType @default(TEXT)
+  contentJson Json
+  xpReward    Int         @default(10)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  module            Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lessonCompletions LessonCompletion[]
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+enum ContentType {
+  TEXT
+  QUIZ
+  TEXT_AND_QUIZ
+}
+
+// ---------------------------------------------------------------------------
+// ENROLLMENTS & PROGRESS
+// ---------------------------------------------------------------------------
+
+model Enrollment {
+  id             String    @id @default(cuid())
+  userId         String
+  courseId       String
+  progressPct    Float     @default(0)
+  xpTotal        Int       @default(0)
+  lastActivityAt DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("enrollments")
+}
+
+model LessonCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String
+  xpEarned    Int      @default(10)
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("lesson_completions")
+}
+
+// ---------------------------------------------------------------------------
+// GAMIFICATION — STREAKS
+// ---------------------------------------------------------------------------
+
+model Streak {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  currentDays      Int       @default(0)
+  longestDays      Int       @default(0)
+  lastActivityDate DateTime?
+  shields          Int       @default(0)
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("streaks")
+}
+
+// ---------------------------------------------------------------------------
+// GAMIFICATION — ACHIEVEMENTS
+// ---------------------------------------------------------------------------
+
+model Achievement {
+  id           String             @id @default(cuid())
+  title        String
+  description  String
+  iconUrl      String?
+  triggerType  AchievementTrigger
+  triggerValue Int
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+enum AchievementTrigger {
+  LESSONS_COMPLETED
+  STREAK_DAYS
+  COURSES_COMPLETED
+  XP_TOTAL
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ---------------------------------------------------------------------------
+// GAMIFICATION — LEADERBOARD (actualizado via cron cada 15 min)
+// ---------------------------------------------------------------------------
+
+model LeaderboardEntry {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  userName  String
+  avatarUrl String?
+  xpTotal   Int      @default(0)
+  rank      Int
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId, rank])
+  @@map("leaderboard_entries")
+}
+
+// ---------------------------------------------------------------------------
+// AI — registro de jobs de generación de cursos desde PDF
+// ---------------------------------------------------------------------------
+
+model CourseGenerationJob {
+  id          String    @id @default(cuid())
+  pdfUrl      String
+  status      JobStatus @default(PENDING)
+  resultJson  Json?
+  errorMsg    String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@map("course_generation_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
