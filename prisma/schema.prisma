@@ -3,8 +3,7 @@ generator client {
 }
 
 datasource db {
-  // LOCAL DEV: SQLite — url se configura en prisma.config.ts
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +127,7 @@ model Lesson {
   title       String
   order       Int
   contentType ContentType @default(TEXT)
-  contentJson String
+  contentJson Json
   xpReward    Int         @default(10)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -266,7 +265,7 @@ model CourseGenerationJob {
   id          String    @id @default(cuid())
   pdfUrl      String
   status      JobStatus @default(PENDING)
-  resultJson  String?
+  resultJson  Json?
   errorMsg    String?
   createdBy   String
   createdAt   DateTime  @default(now())
