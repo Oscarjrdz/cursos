@@ -43,6 +43,13 @@ export default function SuperAdminDashboard({ data }: Props) {
             <h1 className="text-2xl font-bold text-white">Super Admin</h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/admin/courses"
+              className="text-sm px-4 py-2 rounded-xl font-medium transition-all hover:opacity-90"
+              style={{ background: "var(--surface)", color: "white", border: "1px solid var(--border)" }}
+            >
+              📚 Cursos
+            </Link>
             <button className="text-sm px-4 py-2 rounded-xl font-medium text-white"
               style={{ background: "var(--primary)" }}>
               + Nuevo cliente
