@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createCourse, type CourseFormState } from "@/features/courses/actions"
 
@@ -11,6 +11,102 @@ const emptyLesson = (): Lesson => ({ title: "", contentType: "TEXT", content: ""
 const emptyModule = (): Module => ({ title: "", lessons: [emptyLesson()] })
 
 const initialState: CourseFormState = {}
+
+function PdfUploadPanel() {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [dragging, setDragging] = useState(false)
+
+  const handleFile = (f: File) => {
+    if (f.type !== "application/pdf") return
+    setFile(f)
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Drop zone */}
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+        className="rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all"
+        style={{
+          background: dragging ? "rgba(124,58,237,0.1)" : "var(--surface)",
+          border: `2px dashed ${dragging ? "var(--primary)" : "var(--border)"}`,
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+        />
+
+        {file ? (
+          <>
+            <span className="text-4xl">📄</span>
+            <p className="text-white font-medium text-sm">{file.name}</p>
+            <p className="text-xs" style={{ color: "var(--muted)" }}>
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setFile(null) }}
+              className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/20 hover:text-red-400"
+              style={{ color: "var(--muted)" }}
+            >
+              Cambiar archivo
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="text-4xl">📁</span>
+            <p className="text-white font-medium text-sm">Arrastra tu PDF aquí</p>
+            <p className="text-xs" style={{ color: "var(--muted)" }}>o haz clic para seleccionar</p>
+            <button
+              type="button"
+              className="mt-1 px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 active:scale-95"
+              style={{ background: "var(--primary)" }}
+            >
+              Seleccionar PDF
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Generar con IA */}
+      {file && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl p-5 space-y-3"
+          style={{ background: "var(--surface)" }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🤖</span>
+            <p className="text-white font-medium text-sm">Listo para generar</p>
+          </div>
+          <p className="text-xs" style={{ color: "var(--muted)" }}>
+            Claude analizará <strong className="text-white">{file.name}</strong> y creará módulos, lecciones y quizzes automáticamente.
+          </p>
+          <button
+            type="button"
+            disabled
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white opacity-50 cursor-not-allowed"
+            style={{ background: "var(--primary)" }}
+          >
+            🤖 Generar curso con IA
+          </button>
+          <p className="text-xs text-center" style={{ color: "var(--muted)" }}>
+            Pendiente — se activa al configurar Claude API
+          </p>
+        </motion.div>
+      )}
+    </div>
+  )
+}
 
 export default function CourseForm() {
   const [state, formAction, isPending] = useActionState(createCourse, initialState)
@@ -70,16 +166,7 @@ export default function CourseForm() {
       </div>
 
       {activeTab === "pdf" && (
-        <div className="rounded-2xl p-6 text-center space-y-3" style={{ background: "var(--surface)", border: "2px dashed var(--border)" }}>
-          <span className="text-4xl">🤖</span>
-          <p className="text-white font-medium">Generación con IA desde PDF</p>
-          <p className="text-sm" style={{ color: "var(--muted)" }}>
-            Sube un PDF y Claude generará la estructura del curso automáticamente.
-          </p>
-          <span className="inline-block text-xs px-3 py-1.5 rounded-full font-medium" style={{ background: "rgba(245,158,11,0.15)", color: "#fbbf24" }}>
-            TODO — pendiente de configurar Claude API
-          </span>
-        </div>
+        <PdfUploadPanel />
       )}
 
       {activeTab === "manual" && (
