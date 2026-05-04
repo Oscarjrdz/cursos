@@ -12,26 +12,54 @@ const emptyModule = (): Module => ({ title: "", lessons: [emptyLesson()] })
 
 const initialState: CourseFormState = {}
 
-function PdfUploadPanel() {
+type GeneratedCourse = { title: string; description: string; modules: Module[] }
+
+function PdfUploadPanel({ onGenerated }: { onGenerated: (course: GeneratedCourse) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle")
+  const [errorMsg, setErrorMsg] = useState("")
 
   const handleFile = (f: File) => {
-    if (f.type !== "application/pdf") return
+    if (f.type !== "application/pdf") { setErrorMsg("Solo se aceptan archivos PDF"); return }
     setFile(f)
+    setErrorMsg("")
+    setStatus("idle")
+  }
+
+  const handleGenerate = async () => {
+    if (!file) return
+    setStatus("loading")
+    setErrorMsg("")
+
+    try {
+      const formData = new FormData()
+      formData.append("pdf", file)
+
+      const res = await fetch("/api/generate-course", { method: "POST", body: formData })
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error ?? "Error al generar")
+
+      onGenerated(data.course)
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Error inesperado")
+      setStatus("error")
+    }
   }
 
   return (
     <div className="space-y-4">
       {/* Drop zone */}
       <div
-        onClick={() => inputRef.current?.click()}
+        onClick={() => status !== "loading" && inputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
-        className="rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all"
+        className="rounded-2xl p-8 flex flex-col items-center gap-3 transition-all"
         style={{
+          cursor: status === "loading" ? "default" : "pointer",
           background: dragging ? "rgba(124,58,237,0.1)" : "var(--surface)",
           border: `2px dashed ${dragging ? "var(--primary)" : "var(--border)"}`,
         }}
@@ -51,14 +79,16 @@ function PdfUploadPanel() {
             <p className="text-xs" style={{ color: "var(--muted)" }}>
               {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setFile(null) }}
-              className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/20 hover:text-red-400"
-              style={{ color: "var(--muted)" }}
-            >
-              Cambiar archivo
-            </button>
+            {status !== "loading" && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setFile(null); setStatus("idle") }}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/20 hover:text-red-400"
+                style={{ color: "var(--muted)" }}
+              >
+                Cambiar archivo
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -76,31 +106,36 @@ function PdfUploadPanel() {
         )}
       </div>
 
-      {/* Generar con IA */}
-      {file && (
-        <motion.div
+      {errorMsg && (
+        <p className="text-sm text-red-400 px-1">{errorMsg}</p>
+      )}
+
+      {/* Botón generar */}
+      {file && status !== "loading" && (
+        <motion.button
+          type="button"
+          onClick={handleGenerate}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl p-5 space-y-3"
+          className="w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+          style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}
+        >
+          🤖 Generar curso con IA
+        </motion.button>
+      )}
+
+      {/* Loading */}
+      {status === "loading" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="rounded-2xl p-6 flex flex-col items-center gap-3"
           style={{ background: "var(--surface)" }}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🤖</span>
-            <p className="text-white font-medium text-sm">Listo para generar</p>
-          </div>
-          <p className="text-xs" style={{ color: "var(--muted)" }}>
-            Claude analizará <strong className="text-white">{file.name}</strong> y creará módulos, lecciones y quizzes automáticamente.
-          </p>
-          <button
-            type="button"
-            disabled
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white opacity-50 cursor-not-allowed"
-            style={{ background: "var(--primary)" }}
-          >
-            🤖 Generar curso con IA
-          </button>
+          <div className="w-8 h-8 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+          <p className="text-white font-medium text-sm">Analizando PDF con IA...</p>
           <p className="text-xs text-center" style={{ color: "var(--muted)" }}>
-            Pendiente — se activa al configurar Claude API
+            GPT-4 está leyendo el documento y creando la estructura del curso. Puede tomar 15-30 segundos.
           </p>
         </motion.div>
       )}
@@ -112,6 +147,23 @@ export default function CourseForm() {
   const [state, formAction, isPending] = useActionState(createCourse, initialState)
   const [modules, setModules] = useState<Module[]>([emptyModule()])
   const [activeTab, setActiveTab] = useState<"manual" | "pdf">("manual")
+  const [generatedTitle, setGeneratedTitle] = useState("")
+  const [generatedDesc, setGeneratedDesc] = useState("")
+
+  const handleGenerated = (course: GeneratedCourse) => {
+    setGeneratedTitle(course.title)
+    setGeneratedDesc(course.description)
+    setModules(course.modules.map((m) => ({
+      title: m.title,
+      lessons: m.lessons.map((l) => ({
+        title: l.title,
+        contentType: l.contentType as Lesson["contentType"],
+        content: l.content,
+        xpReward: l.xpReward ?? 10,
+      })),
+    })))
+    setActiveTab("manual")
+  }
 
   // Module helpers
   const updateModule = (mIdx: number, key: keyof Module, value: string) =>
@@ -166,7 +218,7 @@ export default function CourseForm() {
       </div>
 
       {activeTab === "pdf" && (
-        <PdfUploadPanel />
+        <PdfUploadPanel onGenerated={handleGenerated} />
       )}
 
       {activeTab === "manual" && (
@@ -179,15 +231,12 @@ export default function CourseForm() {
               <label className="text-xs font-medium" style={{ color: "var(--muted)" }}>Título *</label>
               <input
                 name="title"
+                value={generatedTitle}
+                onChange={(e) => setGeneratedTitle(e.target.value)}
                 placeholder="Ej. Fundamentos de Marketing Digital"
                 required
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all focus:ring-2"
-                style={{
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                  // @ts-ignore
-                  "--tw-ring-color": "var(--primary)",
-                }}
+                style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
               />
               {state.fieldErrors?.title && (
                 <p className="text-xs text-red-400">{state.fieldErrors.title[0]}</p>
@@ -198,6 +247,8 @@ export default function CourseForm() {
               <label className="text-xs font-medium" style={{ color: "var(--muted)" }}>Descripción</label>
               <textarea
                 name="description"
+                value={generatedDesc}
+                onChange={(e) => setGeneratedDesc(e.target.value)}
                 placeholder="¿De qué trata este curso?"
                 rows={3}
                 className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none transition-all focus:ring-2"
