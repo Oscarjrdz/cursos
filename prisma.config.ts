@@ -7,6 +7,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.POSTGRES_PRISMA_URL!,
+    // Migraciones requieren conexión directa (sin pgbouncer) para advisory locks
+    url: process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_PRISMA_URL!,
   },
 });
