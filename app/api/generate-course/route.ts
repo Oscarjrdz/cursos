@@ -7,7 +7,7 @@ export const maxDuration = 60
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el texto de un documento y generar la estructura completa de un curso de aprendizaje.
+const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el texto de un documento y generar la estructura COMPLETA de un curso de aprendizaje, sin omitir ningún tema.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adicional:
 {
@@ -20,7 +20,7 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adici
         {
           "title": "Título de la lección",
           "contentType": "TEXT" | "TEXT_AND_QUIZ",
-          "content": "Contenido resumido de la lección (2-4 párrafos concisos)",
+          "content": "Contenido educativo detallado de la lección (3-5 párrafos)",
           "xpReward": 10
         }
       ]
@@ -28,13 +28,16 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adici
   ]
 }
 
-Reglas:
-- Crea entre 2 y 5 módulos según la cantidad de contenido
-- Cada módulo debe tener entre 2 y 5 lecciones
-- Las lecciones de cierre de módulo deben ser TEXT_AND_QUIZ
-- El contenido de cada lección debe ser claro, educativo y basado en el documento
+Reglas CRÍTICAS:
+- DEBES cubrir el 100% del contenido del documento, sin omitir ningún tema, módulo o sección
+- Si el documento tiene módulos explícitos (ej. "Módulo 1", "Módulo 2"...), crea un módulo del curso por cada uno
+- Si el documento tiene mucho contenido, agrupa temas muy relacionados en un módulo, pero NUNCA descartes información
+- Cada módulo debe tener entre 1 y 4 lecciones según su profundidad
+- La última lección de cada módulo debe ser TEXT_AND_QUIZ
+- El contenido de cada lección debe ser claro, detallado y educativo, expandiendo lo del documento
 - xpReward entre 10 y 30 según complejidad de la lección
-- Responde en el mismo idioma del documento`
+- Responde en el mismo idioma del documento
+- No hay límite máximo de módulos: crea tantos como requiera el contenido`
 
 export async function POST(request: NextRequest) {
   try {
