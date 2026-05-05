@@ -2,16 +2,16 @@ import CourseForm from "@/features/courses/components/CourseForm"
 
 export default function NewCoursePage() {
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
-      <div className="px-6 pt-8 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="max-w-3xl mx-auto">
-          <p className="text-sm mb-1" style={{ color: "var(--muted)" }}>
-            Super Admin / <a href="/admin/courses" className="hover:text-white transition-colors">Cursos</a> / Nuevo
-          </p>
-          <h1 className="text-2xl font-bold text-white">Crear curso</h1>
-        </div>
+    <div className="p-8">
+      <div className="mb-8">
+        <p className="text-xs mb-1" style={{ color: "#94a3b8" }}>
+          <a href="/admin/courses" className="hover:underline">Cursos</a>
+          {" / "}Nuevo
+        </p>
+        <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>Crear curso</h1>
+        <p className="text-sm mt-1" style={{ color: "#94a3b8" }}>Manual o desde un PDF con IA</p>
       </div>
-      <div className="px-6 py-6 max-w-3xl mx-auto">
+      <div className="max-w-3xl">
         <CourseForm />
       </div>
     </div>

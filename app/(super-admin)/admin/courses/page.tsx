@@ -22,29 +22,21 @@ export default async function CoursesPage() {
   }))
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
-      <div className="px-6 pt-8 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <p className="text-sm mb-1" style={{ color: "var(--muted)" }}>
-              <Link href="/admin/dashboard" className="hover:text-white transition-colors">Super Admin</Link>
-              {" / "}Cursos
-            </p>
-            <h1 className="text-2xl font-bold text-white">Biblioteca de cursos</h1>
-          </div>
-          <Link
-            href="/admin/courses/new"
-            className="px-4 py-2 rounded-xl font-medium text-white text-sm transition-all hover:opacity-90 active:scale-95"
-            style={{ background: "var(--primary)" }}
-          >
-            + Nuevo curso
-          </Link>
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>Cursos</h1>
+          <p className="text-sm mt-1" style={{ color: "#94a3b8" }}>Biblioteca de cursos disponibles</p>
         </div>
+        <Link
+          href="/admin/courses/new"
+          className="px-4 py-2 rounded-xl font-medium text-white text-sm transition-all hover:opacity-90"
+          style={{ background: "#7c3aed" }}
+        >
+          + Nuevo curso
+        </Link>
       </div>
-
-      <div className="px-6 py-6 max-w-5xl mx-auto">
-        <CourseList courses={coursesWithCounts} />
-      </div>
+      <CourseList courses={coursesWithCounts} />
     </div>
   )
 }

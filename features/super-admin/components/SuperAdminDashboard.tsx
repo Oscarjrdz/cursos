@@ -23,167 +23,186 @@ type Props = {
   }
 }
 
-function healthStatus(tenant: Tenant): { color: string; dot: string; label: string } {
-  if (tenant.status === "SUSPENDED" || tenant.expiresIn < 0) return { color: "#f87171", dot: "bg-red-400", label: "Expirado" }
+function statusBadge(tenant: Tenant) {
+  if (tenant.status === "SUSPENDED" || tenant.expiresIn < 0)
+    return { label: "Expirado", bg: "#fef2f2", color: "#dc2626" }
   if (tenant.expiresIn <= 5 || tenant.students.current / tenant.students.max >= 0.9)
-    return { color: "#fbbf24", dot: "bg-yellow-400", label: "Atención" }
-  return { color: "#4ade80", dot: "bg-green-400", label: "OK" }
+    return { label: "Atención", bg: "#fffbeb", color: "#d97706" }
+  return { label: "Activo", bg: "#f0fdf4", color: "#16a34a" }
 }
 
+const stats = [
+  { label: "Clientes activos", key: "totalTenants" as const, icon: "🏢", color: "#7c3aed" },
+  { label: "Alumnos totales", key: "totalStudents" as const, icon: "👥", color: "#2563eb" },
+  { label: "Activos hoy", key: "activeToday" as const, icon: "⚡", color: "#059669" },
+  { label: "Completitud global", key: "globalCompletion" as const, icon: "📊", color: "#dc2626", suffix: "%" },
+]
+
 export default function SuperAdminDashboard({ data }: Props) {
-  const { stats, tenants } = data
+  const { tenants } = data
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
-      {/* Header */}
-      <div className="px-6 pt-8 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <p className="text-sm mb-1" style={{ color: "var(--muted)" }}>LearnFlow</p>
-            <h1 className="text-2xl font-bold text-white">Super Admin</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin/courses"
-              className="text-sm px-4 py-2 rounded-xl font-medium transition-all hover:opacity-90"
-              style={{ background: "var(--surface)", color: "white", border: "1px solid var(--border)" }}
-            >
-              📚 Cursos
-            </Link>
-            <button className="text-sm px-4 py-2 rounded-xl font-medium text-white"
-              style={{ background: "var(--primary)" }}>
-              + Nuevo cliente
-            </button>
-            <Link href="/" className="text-xs px-3 py-2 rounded-xl" style={{ background: "var(--surface)", color: "var(--muted)" }}>
-              ← Salir
-            </Link>
-          </div>
-        </div>
+    <div className="p-8">
+      {/* Page header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>Dashboard</h1>
+        <p className="text-sm mt-1" style={{ color: "#94a3b8" }}>Resumen general de la plataforma</p>
       </div>
 
-      <div className="px-6 py-6 max-w-5xl mx-auto space-y-6">
-
-        {/* Global Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3"
-        >
-          {[
-            { icon: "🏢", label: "Clientes activos", value: stats.totalTenants },
-            { icon: "👥", label: "Alumnos totales", value: stats.totalStudents },
-            { icon: "⚡", label: "Activos hoy", value: stats.activeToday },
-            { icon: "📊", label: "Completitud global", value: `${stats.globalCompletion}%` },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl p-4" style={{ background: "var(--surface)" }}>
-              <div className="flex items-center gap-2 mb-2">
-                <span>{s.icon}</span>
-                <span className="text-xs" style={{ color: "var(--muted)" }}>{s.label}</span>
-              </div>
-              <p className="text-2xl font-bold text-white">{s.value}</p>
+      {/* Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl p-5"
+            style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium" style={{ color: "#94a3b8" }}>{s.label}</span>
+              <span
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                style={{ background: `${s.color}15` }}
+              >
+                {s.icon}
+              </span>
             </div>
-          ))}
-        </motion.div>
+            <p className="text-2xl font-bold" style={{ color: "#0f172a" }}>
+              {data.stats[s.key]}{s.suffix ?? ""}
+            </p>
+          </div>
+        ))}
+      </motion.div>
 
-        {/* Tenants */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-2xl overflow-hidden"
-          style={{ background: "var(--surface)" }}
+      {/* Tenants table */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="rounded-2xl overflow-hidden"
+        style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+      >
+        <div
+          className="px-6 py-4 flex items-center justify-between"
+          style={{ borderBottom: "1px solid #f1f5f9" }}
         >
-          <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-white">Clientes</h2>
-          </div>
+          <h2 className="font-semibold text-sm" style={{ color: "#0f172a" }}>Clientes</h2>
+          <button
+            className="text-sm px-4 py-2 rounded-xl font-medium text-white transition-all hover:opacity-90"
+            style={{ background: "#7c3aed" }}
+          >
+            + Nuevo cliente
+          </button>
+        </div>
 
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {tenants.map((tenant, i) => {
-              const health = healthStatus(tenant)
-              const usagePct = (tenant.students.current / tenant.students.max) * 100
+        {/* Table header */}
+        <div
+          className="grid px-6 py-3 text-xs font-medium"
+          style={{
+            gridTemplateColumns: "2fr 1fr 1fr 1fr 80px",
+            color: "#94a3b8",
+            borderBottom: "1px solid #f1f5f9",
+            background: "#fafafa",
+          }}
+        >
+          <span>Cliente</span>
+          <span>Alumnos</span>
+          <span>Progreso</span>
+          <span>Vencimiento</span>
+          <span />
+        </div>
 
-              return (
-                <motion.div
-                  key={tenant.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.06 }}
-                  className="p-5 hover:bg-white/[0.02] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Semáforo */}
-                      <div className="relative flex-shrink-0">
-                        <div className={`w-3 h-3 rounded-full ${health.dot}`} />
-                        <div className={`w-3 h-3 rounded-full ${health.dot} absolute inset-0 animate-ping opacity-50`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white">{tenant.name}</p>
-                        <p className="text-xs" style={{ color: "var(--muted)" }}>
-                          app.com/{tenant.slug} · Último acceso: {tenant.lastActivity}
-                        </p>
-                      </div>
-                    </div>
+        <div>
+          {tenants.map((tenant, i) => {
+            const badge = statusBadge(tenant)
+            const usagePct = Math.min((tenant.students.current / tenant.students.max) * 100, 100)
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span
-                        className="text-xs px-2.5 py-1 rounded-full font-medium"
-                        style={{ background: `${health.color}22`, color: health.color }}
-                      >
-                        {health.label}
-                      </span>
-                      <Link
-                        href={`/${tenant.slug}/dashboard`}
-                        className="text-xs px-3 py-1.5 rounded-lg transition-all hover:opacity-90"
-                        style={{ background: "var(--surface-2)", color: "var(--muted)" }}
-                      >
-                        Ver →
-                      </Link>
-                    </div>
+            return (
+              <motion.div
+                key={tenant.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="grid px-6 py-4 items-center hover:bg-slate-50 transition-colors"
+                style={{
+                  gridTemplateColumns: "2fr 1fr 1fr 1fr 80px",
+                  borderBottom: i < tenants.length - 1 ? "1px solid #f1f5f9" : "none",
+                }}
+              >
+                {/* Name */}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm" style={{ color: "#0f172a" }}>{tenant.name}</p>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: badge.bg, color: badge.color }}
+                    >
+                      {badge.label}
+                    </span>
                   </div>
+                  <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+                    /{tenant.slug} · {tenant.lastActivity}
+                  </p>
+                </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    {/* Alumnos */}
-                    <div>
-                      <p className="text-xs mb-1.5" style={{ color: "var(--muted)" }}>
-                        Alumnos {tenant.students.current}/{tenant.students.max}
-                      </p>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${usagePct}%`,
-                            background: usagePct >= 90 ? "#f87171" : "var(--primary)",
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Progreso */}
-                    <div>
-                      <p className="text-xs mb-1.5" style={{ color: "var(--muted)" }}>
-                        Progreso promedio {tenant.avgProgress}%
-                      </p>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
-                        <div className="h-full rounded-full" style={{ width: `${tenant.avgProgress}%`, background: "#8b5cf6" }} />
-                      </div>
-                    </div>
-
-                    {/* Vencimiento */}
-                    <div className="text-right">
-                      <p className="text-xs" style={{ color: "var(--muted)" }}>Vence en</p>
-                      <p className="text-sm font-semibold mt-0.5"
-                        style={{ color: tenant.expiresIn <= 0 ? "#f87171" : tenant.expiresIn <= 5 ? "#fbbf24" : "white" }}>
-                        {tenant.expiresIn <= 0 ? "Expirado" : `${tenant.expiresIn} días`}
-                      </p>
-                    </div>
+                {/* Students */}
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "#0f172a" }}>
+                    {tenant.students.current}
+                    <span className="font-normal" style={{ color: "#94a3b8" }}>/{tenant.students.max}</span>
+                  </p>
+                  <div className="mt-1.5 h-1.5 rounded-full overflow-hidden w-24" style={{ background: "#e2e8f0" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${usagePct}%`,
+                        background: usagePct >= 90 ? "#dc2626" : "#7c3aed",
+                      }}
+                    />
                   </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        </motion.div>
-      </div>
+                </div>
+
+                {/* Progress */}
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{tenant.avgProgress}%</p>
+                  <div className="mt-1.5 h-1.5 rounded-full overflow-hidden w-24" style={{ background: "#e2e8f0" }}>
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${tenant.avgProgress}%`, background: "#2563eb" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Expiry */}
+                <div>
+                  <p
+                    className="text-sm font-medium"
+                    style={{
+                      color: tenant.expiresIn <= 0 ? "#dc2626" : tenant.expiresIn <= 5 ? "#d97706" : "#0f172a",
+                    }}
+                  >
+                    {tenant.expiresIn <= 0 ? "Expirado" : `${tenant.expiresIn} días`}
+                  </p>
+                </div>
+
+                {/* Action */}
+                <div className="flex justify-end">
+                  <Link
+                    href={`/${tenant.slug}/dashboard`}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-80"
+                    style={{ background: "#f1f5f9", color: "#475569" }}
+                  >
+                    Ver →
+                  </Link>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </motion.div>
     </div>
   )
 }
