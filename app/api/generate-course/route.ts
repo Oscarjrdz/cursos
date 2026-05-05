@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { extractText } from "unpdf"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el texto de un documento y generar la estructura COMPLETA de un curso de aprendizaje, sin omitir ningún tema.
+const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el documento adjunto y generar la estructura COMPLETA de un curso de aprendizaje, sin omitir ningún tema.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adicional:
 {
@@ -31,7 +30,6 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adici
 Reglas CRÍTICAS:
 - DEBES cubrir el 100% del contenido del documento, sin omitir ningún tema, módulo o sección
 - Si el documento tiene módulos explícitos (ej. "Módulo 1", "Módulo 2"...), crea un módulo del curso por cada uno
-- Si el documento tiene mucho contenido, agrupa temas muy relacionados en un módulo, pero NUNCA descartes información
 - Cada módulo debe tener entre 1 y 4 lecciones según su profundidad
 - La última lección de cada módulo debe ser TEXT_AND_QUIZ
 - El contenido de cada lección debe ser claro, detallado y educativo, expandiendo lo del documento
@@ -52,31 +50,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El PDF no puede superar 10MB" }, { status: 400 })
     }
 
-    const buffer = new Uint8Array(await file.arrayBuffer())
-    const { text: pages } = await extractText(buffer, { mergePages: true })
-    const text = (pages as unknown as string).slice(0, 15000)
+    // Enviar PDF directamente a OpenAI (Responses API con soporte nativo de PDF)
+    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64")
 
-    if (text.trim().length < 100) {
-      return NextResponse.json({ error: "El PDF no tiene suficiente texto para generar un curso" }, { status: 400 })
-    }
-
-    // Llamar a GPT-4
-    const completion = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model: "gpt-4o",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Genera un curso basado en este documento:\n\n${text}` },
+      instructions: SYSTEM_PROMPT,
+      input: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_file",
+              file_data: `data:application/pdf;base64,${base64}`,
+            },
+            {
+              type: "input_text",
+              text: "Genera el curso completo basado en este documento. Cubre el 100% del contenido.",
+            },
+          ],
+        },
       ],
-      response_format: { type: "json_object" },
-      temperature: 0.4,
+      text: { format: { type: "json_object" } },
     })
 
-    const raw = completion.choices[0].message.content
+    const raw = response.output_text
     if (!raw) throw new Error("Respuesta vacía de OpenAI")
 
     const course = JSON.parse(raw)
 
-    // Validación básica de estructura
     if (!course.title || !Array.isArray(course.modules) || course.modules.length === 0) {
       throw new Error("La IA devolvió una estructura inválida")
     }
@@ -90,5 +92,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-export const config = { api: { bodyParser: false } }
