@@ -48,9 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El PDF no puede superar 10MB" }, { status: 400 })
     }
 
-    // Extraer texto del PDF (import dinámico para evitar conflictos en build)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse") as (b: Buffer) => Promise<{ text: string }>
+    const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (b: Buffer) => Promise<{ text: string }>
     const buffer = Buffer.from(await file.arrayBuffer())
     const parsed = await pdfParse(buffer)
     const text = parsed.text.slice(0, 15000)
