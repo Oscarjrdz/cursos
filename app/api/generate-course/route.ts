@@ -56,14 +56,16 @@ export async function POST(request: NextRequest) {
     const response = await openai.responses.create({
       model: "gpt-4o",
       instructions: SYSTEM_PROMPT,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       input: [
         {
           role: "user",
           content: [
             {
               type: "input_file",
+              filename: file.name,
               file_data: `data:application/pdf;base64,${base64}`,
-            },
+            } as any,
             {
               type: "input_text",
               text: "Genera el curso completo basado en este documento. Cubre el 100% del contenido.",
