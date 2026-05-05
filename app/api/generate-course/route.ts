@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
+import { extractText } from "unpdf"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -48,11 +49,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El PDF no puede superar 10MB" }, { status: 400 })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (b: Buffer) => Promise<{ text: string }>
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const parsed = await pdfParse(buffer)
-    const text = parsed.text.slice(0, 15000)
+    const buffer = new Uint8Array(await file.arrayBuffer())
+    const { text: pages } = await extractText(buffer, { mergePages: true })
+    const text = (pages as unknown as string).slice(0, 15000)
 
     if (text.trim().length < 100) {
       return NextResponse.json({ error: "El PDF no tiene suficiente texto para generar un curso" }, { status: 400 })
