@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
             } as any,
             {
               type: "input_text",
-              text: "Genera el curso completo basado en este documento. Cubre el 100% del contenido.",
+              text: "Genera el curso completo basado en este documento. Cubre el 100% del contenido. Responde únicamente con JSON válido.",
             },
           ],
         },
