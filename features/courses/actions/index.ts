@@ -81,6 +81,10 @@ export async function publishCourse(courseId: string) {
 }
 
 export async function deleteCourse(courseId: string) {
-  await prisma.course.delete({ where: { id: courseId } })
+  await prisma.$transaction([
+    prisma.tenantCourse.deleteMany({ where: { courseId } }),
+    prisma.enrollment.deleteMany({ where: { courseId } }),
+    prisma.course.delete({ where: { id: courseId } }),
+  ])
   revalidatePath("/admin/courses")
 }
