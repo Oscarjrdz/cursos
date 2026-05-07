@@ -5,15 +5,19 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+const QuizItemSchema = z.object({
+  question: z.string(),
+  options: z.array(z.string()),
+  correctIndex: z.number(),
+  explanation: z.string().optional(),
+})
+
 const LessonSchema = z.object({
   title: z.string().min(1),
   contentType: z.enum(["TEXT", "QUIZ", "TEXT_AND_QUIZ"]),
   content: z.string().min(1),
   xpReward: z.coerce.number().min(5).max(100),
-  question: z.string().optional(),
-  options: z.array(z.string()).optional(),
-  correctIndex: z.coerce.number().optional(),
-  explanation: z.string().optional(),
+  quiz: z.array(QuizItemSchema).optional(),
 })
 
 const ModuleSchema = z.object({
@@ -65,12 +69,7 @@ export async function createCourse(
               contentType: lesson.contentType,
               contentJson: {
                 blocks: [{ type: "paragraph", text: lesson.content }],
-                ...(lesson.question !== undefined && {
-                  question: lesson.question,
-                  options: lesson.options,
-                  correctIndex: lesson.correctIndex,
-                  explanation: lesson.explanation,
-                }),
+                ...(lesson.quiz && lesson.quiz.length > 0 && { quiz: lesson.quiz }),
               },
               xpReward: lesson.xpReward,
             })),
