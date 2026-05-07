@@ -18,12 +18,15 @@ export async function POST(request: NextRequest) {
     select: { id: true, title: true, contentType: true, contentJson: true },
   })
 
-  const missing = lessons.filter((l) => {
+  const allMissing = lessons.filter((l) => {
     const cj = l.contentJson as Record<string, unknown>
     return !Array.isArray(cj.quiz) || (cj.quiz as unknown[]).length < 5
   })
 
-  if (missing.length === 0) {
+  const batchSize = parseInt(request.nextUrl.searchParams.get("batch") ?? "3", 10)
+  const missing = allMissing.slice(0, batchSize)
+
+  if (allMissing.length === 0) {
     return NextResponse.json({ ok: true, updated: 0, message: "All lessons already have 5-question quizzes." })
   }
 
@@ -110,6 +113,7 @@ Reglas:
   return NextResponse.json({
     ok: true,
     updated: results.filter((r) => r.status.startsWith("updated")).length,
+    remaining: allMissing.length - missing.length,
     results,
   })
 }
