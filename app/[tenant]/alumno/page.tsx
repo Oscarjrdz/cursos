@@ -191,7 +191,7 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
     }}>
 
       {/* Cat + bubble */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 28 }}>
         <Bubble>
           <p style={{ color: "#0f172a", fontSize: 15, fontWeight: 700, lineHeight: 1.4, margin: 0 }}>
             ¡Hola! Ingresa tus accesos
@@ -200,8 +200,8 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
         <motion.img
           src={CAT2}
           alt=""
-          width={110}
-          height={110}
+          width={64}
+          height={64}
           animate={{ y: [0, -8, 0] }}
           transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
           style={{ display: "block", margin: "4px auto 0" }}
@@ -210,64 +210,83 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
 
       {/* Form */}
       <form onSubmit={handleSubmit}
-        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
+        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 18, flex: 1 }}>
 
         {/* Phone field */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#7c3aed", textAlign: "center", lineHeight: 1.4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{
+            margin: 0, fontSize: 14, fontWeight: 800, color: "#7c3aed",
+            textTransform: "uppercase", letterSpacing: "0.08em",
+          }}>
             Teléfono
           </p>
           <div
             onFocus={() => setFocused("phone")}
             onBlur={() => setFocused(null)}
             style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "0 20px", height: 60, borderRadius: 18,
-              border: `2.5px solid ${focused === "phone" ? "#7c3aed" : "#e2e8f0"}`,
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "0 20px", height: 66, borderRadius: 16,
+              border: `3px solid ${focused === "phone" ? "#7c3aed" : "#e2e8f0"}`,
               background: focused === "phone" ? "#faf5ff" : "#ffffff",
               boxShadow: focused === "phone"
-                ? "0 0 0 4px rgba(124,58,237,0.1)"
-                : "0 2px 8px rgba(0,0,0,0.06)",
-              transition: "all 0.15s",
+                ? "0 0 0 4px rgba(124,58,237,0.12), 0 4px 0 #e9d5ff"
+                : "0 4px 0 #e2e8f0",
+              transition: "all 0.2s ease",
             }}
           >
-            <span style={{ fontSize: 20, flexShrink: 0 }}>📱</span>
+            <svg width={22} height={22} viewBox="0 0 24 24" fill="none"
+              stroke={focused === "phone" ? "#7c3aed" : "#cbd5e1"} strokeWidth="2.2" strokeLinecap="round"
+              style={{ flexShrink: 0, transition: "stroke 0.2s" }}>
+              <rect x="5" y="2" width="14" height="20" rx="3" />
+              <circle cx="12" cy="18" r="1" fill={focused === "phone" ? "#7c3aed" : "#cbd5e1"} />
+              <path d="M10 5h4" />
+            </svg>
             <input
               type="tel"
               value={form.phone}
               onChange={set("phone")}
-              placeholder="Tu teléfono"
+              placeholder="Tu número"
               autoComplete="tel"
               inputMode="numeric"
               style={{
-                flex: 1, fontSize: 16, fontWeight: 700, textAlign: "center",
-                color: "#0f172a", background: "transparent",
+                flex: 1, fontSize: 22, fontWeight: 800, letterSpacing: "0.04em",
+                color: "#7c3aed", background: "transparent",
                 border: "none", outline: "none",
+                caretColor: "#7c3aed",
               }}
             />
           </div>
         </div>
 
         {/* Password field */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#7c3aed", textAlign: "center", lineHeight: 1.4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{
+            margin: 0, fontSize: 14, fontWeight: 800, color: "#7c3aed",
+            textTransform: "uppercase", letterSpacing: "0.08em",
+          }}>
             Contraseña
           </p>
           <div
             onFocus={() => setFocused("password")}
             onBlur={() => setFocused(null)}
             style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "0 20px", height: 60, borderRadius: 18,
-              border: `2.5px solid ${focused === "password" ? "#7c3aed" : "#e2e8f0"}`,
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "0 20px", height: 66, borderRadius: 16,
+              border: `3px solid ${focused === "password" ? "#7c3aed" : "#e2e8f0"}`,
               background: focused === "password" ? "#faf5ff" : "#ffffff",
               boxShadow: focused === "password"
-                ? "0 0 0 4px rgba(124,58,237,0.1)"
-                : "0 2px 8px rgba(0,0,0,0.06)",
-              transition: "all 0.15s",
+                ? "0 0 0 4px rgba(124,58,237,0.12), 0 4px 0 #e9d5ff"
+                : "0 4px 0 #e2e8f0",
+              transition: "all 0.2s ease",
             }}
           >
-            <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
+            <svg width={22} height={22} viewBox="0 0 24 24" fill="none"
+              stroke={focused === "password" ? "#7c3aed" : "#cbd5e1"} strokeWidth="2.2" strokeLinecap="round"
+              style={{ flexShrink: 0, transition: "stroke 0.2s" }}>
+              <rect x="5" y="11" width="14" height="10" rx="2.5" />
+              <path d="M8 11V7a4 4 0 018 0v4" />
+              <circle cx="12" cy="16" r="1.5" fill={focused === "password" ? "#7c3aed" : "#cbd5e1"} />
+            </svg>
             <input
               type="password"
               value={form.password}
@@ -275,9 +294,10 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
               placeholder="Tu contraseña"
               autoComplete="current-password"
               style={{
-                flex: 1, fontSize: 16, fontWeight: 700, textAlign: "center",
-                color: "#0f172a", background: "transparent",
+                flex: 1, fontSize: 22, fontWeight: 800, letterSpacing: "0.06em",
+                color: "#7c3aed", background: "transparent",
                 border: "none", outline: "none",
+                caretColor: "#7c3aed",
               }}
             />
           </div>
@@ -302,16 +322,17 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
             type="submit"
             disabled={loading || !form.phone || !form.password}
             style={{
-              width: "100%", height: 58, borderRadius: 20,
+              width: "100%", height: 58, borderRadius: 16,
               background: loading || !form.phone || !form.password
                 ? "#c4b5fd" : "linear-gradient(135deg, #7c3aed, #6d28d9)",
               boxShadow: loading || !form.phone || !form.password
                 ? "none" : "0 4px 0 #5b21b6",
-              color: "#ffffff", fontSize: 16, fontWeight: 700,
+              color: "#ffffff", fontSize: 16, fontWeight: 900,
+              letterSpacing: "0.1em", textTransform: "uppercase" as const,
               border: "none", cursor: "pointer", lineHeight: 1.4,
             }}
           >
-            {loading ? "Entrando..." : "Entrar →"}
+            {loading ? "Entrando..." : "ENTRAR"}
           </motion.button>
         </div>
       </form>
