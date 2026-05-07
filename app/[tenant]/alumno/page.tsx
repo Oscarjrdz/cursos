@@ -152,7 +152,7 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
 const CAT2 = "https://cdn-icons-png.flaticon.com/128/11051/11051186.png"
 
 /* ─── Screen: Login ─────────────────────────────────────── */
-function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void }) {
+function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: (name: string) => void }) {
   const [form, setForm] = useState({ phone: "", password: "" })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -174,7 +174,7 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
       if (data.role !== "STUDENT") { setError("Solo alumnos pueden entrar por aquí"); return }
-      onSuccess()
+      onSuccess(data.name || "")
     } catch {
       setError("Error de conexión")
     } finally {
@@ -341,7 +341,8 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
 }
 
 /* ─── Screen: Onboarding 1 ───────────────────────────────── */
-function Onboard1({ onNext }: { onNext: () => void }) {
+function Onboard1({ onNext, studentName }: { onNext: () => void; studentName: string }) {
+  const firstName = studentName.split(" ")[0] || "Alumno"
   return (
     <div style={{
       minHeight: "100dvh",
@@ -354,11 +355,11 @@ function Onboard1({ onNext }: { onNext: () => void }) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Bubble>
           <p style={{ color: "#0f172a", fontSize: 16, fontWeight: 700, lineHeight: 1.5, margin: 0 }}>
-            ¡Hola! Soy <span style={{ color: "#7c3aed" }}>Kiti</span>,{" "}
-            tu asistente de aprendizaje 🐱
+            ¡Hola <span style={{ color: "#7c3aed" }}>{firstName}</span>!{" "}
+            Soy <span style={{ color: "#7c3aed" }}>Knowy</span> y te doy la bienvenida a este mundo de conocimiento 🌟
           </p>
         </Bubble>
-        <Cat size={130} />
+        <Cat size={64} />
       </div>
       <div style={{ width: "100%", maxWidth: 340 }}>
         <PurpleBtn label="CONTINUAR" onClick={onNext} />
@@ -406,6 +407,7 @@ export default function AlumnoPage() {
   const params = useParams()
   const slug = params.tenant as string
   const [screen, setScreen] = useState<Screen>("splash")
+  const [studentName, setStudentName] = useState("")
 
   const slideVariants = {
     enter:  { x: "100%", opacity: 0 },
@@ -415,8 +417,8 @@ export default function AlumnoPage() {
 
   const content: Record<Screen, React.ReactNode> = {
     splash:   <SplashScreen onNext={() => setScreen("login")} />,
-    login:    <LoginScreen slug={slug} onSuccess={() => setScreen("onboard1")} />,
-    onboard1: <Onboard1 onNext={() => setScreen("onboard2")} />,
+    login:    <LoginScreen slug={slug} onSuccess={(name) => { setStudentName(name); setScreen("onboard1") }} />,
+    onboard1: <Onboard1 onNext={() => setScreen("onboard2")} studentName={studentName} />,
     onboard2: <Onboard2 tenantSlug={slug} />,
   }
 
