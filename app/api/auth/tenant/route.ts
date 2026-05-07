@@ -4,7 +4,14 @@ import { hashPassword } from "@/lib/crypto"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(req: NextRequest) {
-  const { phone, password, slug } = await req.json()
+  const body = await req.json()
+  const phone = (body.phone ?? "").toString().trim()
+  const password = (body.password ?? "").toString().trim()
+  const slug = (body.slug ?? "").toString().trim()
+
+  if (!phone || !password || !slug) {
+    return NextResponse.json({ error: "Datos incompletos" }, { status: 400 })
+  }
 
   const tenant = await prisma.tenant.findUnique({ where: { slug } })
   if (!tenant) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
@@ -13,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   // Try tenant admin first
   if (tenant.adminPhone && tenant.adminPassword) {
-    if (tenant.adminPhone === phone && tenant.adminPassword === hashed) {
+    if (tenant.adminPhone.trim() === phone && tenant.adminPassword === hashed) {
       const token = await createSession({
         role: "TENANT_ADMIN",
         tenantId: tenant.id,
@@ -31,16 +38,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Try student login
+  // Try student login — allow any status except SUSPENDED
   const student = await prisma.user.findFirst({
     where: {
       tenantId: tenant.id,
-      phone,
+      phone: phone,
       password: hashed,
       role: "STUDENT",
-      status: "ACTIVE",
+      status: { not: "SUSPENDED" },
     },
-    select: { id: true },
+    select: { id: true, name: true },
   })
 
   if (!student) {
@@ -54,7 +61,7 @@ export async function POST(req: NextRequest) {
     userId: student.id,
   })
 
-  const res = NextResponse.json({ ok: true, role: "STUDENT" })
+  const res = NextResponse.json({ ok: true, role: "STUDENT", name: student.name })
   res.cookies.set("lf_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

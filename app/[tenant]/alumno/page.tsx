@@ -101,13 +101,17 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
       <div />
 
       {/* Cat + brand */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+        <h1 style={{ color: "#ffffff", fontSize: 48, fontWeight: 900,
+          letterSpacing: -1, lineHeight: 1, margin: 0, textAlign: "center" }}>
+          Bienvenido
+        </h1>
         <motion.img
           src={CAT}
           alt=""
-          width={160}
-          height={160}
-          animate={{ y: [0, -14, 0] }}
+          width={96}
+          height={96}
+          animate={{ y: [0, -10, 0] }}
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
         />
         <div style={{ textAlign: "center" }}>
@@ -115,10 +119,10 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
             letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 4 }}>
             Candidatic
           </p>
-          <h1 style={{ color: "#ffffff", fontSize: 44, fontWeight: 900,
-            letterSpacing: -1, lineHeight: 1, margin: 0 }}>
+          <p style={{ color: "#ffffff", fontSize: 26, fontWeight: 900,
+            letterSpacing: -0.5, lineHeight: 1, margin: 0 }}>
             Knowledge
-          </h1>
+          </p>
         </div>
       </div>
 
@@ -163,7 +167,7 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
       const res = await fetch("/api/auth/tenant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, slug }),
+        body: JSON.stringify({ phone: form.phone.trim(), password: form.password.trim(), slug }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
