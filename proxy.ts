@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
 
   if (PUBLIC_EXACT.includes(pathname)) return NextResponse.next()
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next()
-  if (/^\/[^/]+\/login$/.test(pathname)) return NextResponse.next()
+  if (/^\/[^/]+\/(login|alumno)$/.test(pathname)) return NextResponse.next()
 
   const token = getSessionFromRequest(request)
   const session = token ? await verifySession(token) : null
