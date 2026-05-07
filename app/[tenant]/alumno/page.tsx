@@ -149,6 +149,8 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
   )
 }
 
+const CAT2 = "https://cdn-icons-png.flaticon.com/128/11051/11051186.png"
+
 /* ─── Screen: Login ─────────────────────────────────────── */
 function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void }) {
   const [form, setForm] = useState({ phone: "", password: "" })
@@ -183,65 +185,117 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
   return (
     <div style={{
       minHeight: "100dvh",
-      background: "#ffffff",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: `max(env(safe-area-inset-top, 0px), 48px) 24px ${safeBottom}`,
+      background: "linear-gradient(180deg, #faf5ff 0%, #ffffff 40%)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: `max(env(safe-area-inset-top, 0px), 40px) 28px ${safeBottom}`,
     }}>
+
       {/* Cat + bubble */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36 }}>
         <Bubble>
           <p style={{ color: "#0f172a", fontSize: 15, fontWeight: 700, lineHeight: 1.4, margin: 0 }}>
-            ¡Hola! Ingresa tus datos para continuar
+            ¡Hola! Ingresa tus accesos
           </p>
         </Bubble>
-        <Cat size={96} />
+        <motion.img
+          src={CAT2}
+          alt=""
+          width={110}
+          height={110}
+          animate={{ y: [0, -8, 0] }}
+          transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+          style={{ display: "block", margin: "4px auto 0" }}
+        />
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit}
-        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
-        {[
-          { key: "phone",    label: "Teléfono",   type: "tel",      placeholder: "8116038195" },
-          { key: "password", label: "Contraseña", type: "password", placeholder: "••••••••" },
-        ].map(({ key, label, type, placeholder }) => (
-          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{label}</label>
-            <div
-              onFocus={() => setFocused(key)}
-              onBlur={() => setFocused(null)}
+        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
+
+        {/* Phone field */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: "#7c3aed", textAlign: "center" }}>
+            Teléfono
+          </p>
+          <div
+            onFocus={() => setFocused("phone")}
+            onBlur={() => setFocused(null)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "0 20px", height: 60, borderRadius: 18,
+              border: `2.5px solid ${focused === "phone" ? "#7c3aed" : "#e2e8f0"}`,
+              background: focused === "phone" ? "#faf5ff" : "#ffffff",
+              boxShadow: focused === "phone"
+                ? "0 0 0 4px rgba(124,58,237,0.1)"
+                : "0 2px 8px rgba(0,0,0,0.06)",
+              transition: "all 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 20 }}>📱</span>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={set("phone")}
+              placeholder="Tu teléfono"
+              autoComplete="tel"
+              inputMode="numeric"
               style={{
-                display: "flex", alignItems: "center",
-                padding: "14px 16px", borderRadius: 16,
-                border: `2px solid ${focused === key ? "#7c3aed" : "#e2e8f0"}`,
-                background: focused === key ? "#faf5ff" : "#f8fafc",
-                transition: "border-color 0.15s, background 0.15s",
+                flex: 1, fontSize: 17, fontWeight: 600, textAlign: "center",
+                color: "#0f172a", background: "transparent",
+                border: "none", outline: "none", letterSpacing: 1,
               }}
-            >
-              <input
-                type={type}
-                value={form[key as keyof typeof form]}
-                onChange={set(key as keyof typeof form)}
-                placeholder={placeholder}
-                autoComplete={key === "phone" ? "tel" : "current-password"}
-                style={{
-                  width: "100%", fontSize: 16, fontWeight: 500,
-                  color: "#0f172a", background: "transparent",
-                  border: "none", outline: "none",
-                }}
-              />
-            </div>
+            />
           </div>
-        ))}
+        </div>
+
+        {/* Password field */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
+            textTransform: "uppercase", color: "#7c3aed", textAlign: "center" }}>
+            Contraseña
+          </p>
+          <div
+            onFocus={() => setFocused("password")}
+            onBlur={() => setFocused(null)}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "0 20px", height: 60, borderRadius: 18,
+              border: `2.5px solid ${focused === "password" ? "#7c3aed" : "#e2e8f0"}`,
+              background: focused === "password" ? "#faf5ff" : "#ffffff",
+              boxShadow: focused === "password"
+                ? "0 0 0 4px rgba(124,58,237,0.1)"
+                : "0 2px 8px rgba(0,0,0,0.06)",
+              transition: "all 0.15s",
+            }}
+          >
+            <span style={{ fontSize: 20 }}>🔒</span>
+            <input
+              type="password"
+              value={form.password}
+              onChange={set("password")}
+              placeholder="Tu contraseña"
+              autoComplete="current-password"
+              style={{
+                flex: 1, fontSize: 17, fontWeight: 600, textAlign: "center",
+                color: "#0f172a", background: "transparent",
+                border: "none", outline: "none", letterSpacing: 3,
+              }}
+            />
+          </div>
+        </div>
 
         {error && (
-          <p style={{
-            fontSize: 13, textAlign: "center", padding: "10px 14px",
-            borderRadius: 12, background: "#fef2f2", color: "#dc2626", margin: 0,
-          }}>
+          <motion.p
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              fontSize: 13, textAlign: "center", padding: "10px 14px",
+              borderRadius: 14, background: "#fef2f2", color: "#dc2626", margin: 0,
+              border: "1px solid #fecaca",
+            }}
+          >
             {error}
-          </p>
+          </motion.p>
         )}
 
         <div style={{ marginTop: "auto", paddingTop: 8 }}>
@@ -250,15 +304,17 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
             type="submit"
             disabled={loading || !form.phone || !form.password}
             style={{
-              width: "100%", padding: "18px", borderRadius: 20,
-              background: loading || !form.phone || !form.password ? "#c4b5fd" : "#7c3aed",
-              boxShadow: "0 4px 0 #5b21b6",
-              color: "#ffffff", fontSize: 14, fontWeight: 900,
-              letterSpacing: "0.1em", textTransform: "uppercase",
+              width: "100%", height: 58, borderRadius: 20,
+              background: loading || !form.phone || !form.password
+                ? "#c4b5fd" : "linear-gradient(135deg, #7c3aed, #6d28d9)",
+              boxShadow: loading || !form.phone || !form.password
+                ? "none" : "0 4px 0 #5b21b6",
+              color: "#ffffff", fontSize: 15, fontWeight: 900,
+              letterSpacing: "0.12em", textTransform: "uppercase",
               border: "none", cursor: "pointer",
             }}
           >
-            {loading ? "ENTRANDO..." : "ENTRAR"}
+            {loading ? "ENTRANDO..." : "ENTRAR →"}
           </motion.button>
         </div>
       </form>
