@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { createStudent, updateStudent, setStudentCredentials, deleteStudent } from "@/features/tenant-admin/actions"
+import { createStudent, updateStudent, setStudentCredentials, deleteStudent, enrollStudent, unenrollStudent } from "@/features/tenant-admin/actions"
 
 type Student = {
   id: string
@@ -19,7 +19,10 @@ type Student = {
   streakDays: number
   subscriptionDaysLeft: number | null
   subscriptionExpiresAt: string | null
+  enrolledCourseIds: string[]
 }
+
+type Course = { id: string; title: string }
 
 type Props = {
   tenantSlug: string
@@ -27,6 +30,7 @@ type Props = {
     tenant: { name: string; slug: string; maxStudents: number }
     stats: { activeStudents: number; avgProgress: number; atRisk: number; nearExpiry: number }
     students: Student[]
+    availableCourses: Course[]
   }
 }
 
@@ -75,9 +79,78 @@ function CreateModal({ tenantSlug, onClose }: { tenantSlug: string; onClose: () 
   )
 }
 
+/* ─── Courses tab ───────────────────────────────────────────── */
+function CoursesTab({ student, tenantSlug, availableCourses }: {
+  student: Student; tenantSlug: string; availableCourses: Course[]
+}) {
+  const [enrolled, setEnrolled] = useState<Set<string>>(new Set(student.enrolledCourseIds))
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function toggle(courseId: string) {
+    setLoading(courseId)
+    try {
+      if (enrolled.has(courseId)) {
+        await unenrollStudent(student.id, courseId, tenantSlug)
+        setEnrolled(s => { const n = new Set(s); n.delete(courseId); return n })
+      } else {
+        await enrollStudent(student.id, courseId, tenantSlug)
+        setEnrolled(s => new Set(s).add(courseId))
+      }
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  if (availableCourses.length === 0) {
+    return (
+      <div className="flex flex-col items-center py-8 gap-2">
+        <span className="text-3xl">📚</span>
+        <p className="text-sm font-medium" style={{ color: "#0f172a" }}>Sin cursos asignados al cliente</p>
+        <p className="text-xs text-center" style={{ color: "#94a3b8" }}>
+          Asigna cursos desde el panel de Super Admin primero
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs" style={{ color: "#94a3b8" }}>
+        Activa los cursos que verá este alumno
+      </p>
+      {availableCourses.map(course => {
+        const isEnrolled = enrolled.has(course.id)
+        const isLoading = loading === course.id
+        return (
+          <div key={course.id} className="flex items-center gap-3 px-4 py-3 rounded-xl"
+            style={{ background: isEnrolled ? "#faf5ff" : "#f8fafc", border: `1.5px solid ${isEnrolled ? "#ddd6fe" : "#e2e8f0"}` }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{course.title}</p>
+              <p className="text-xs mt-0.5" style={{ color: isEnrolled ? "#7c3aed" : "#94a3b8" }}>
+                {isEnrolled ? "✓ Asignado" : "Sin asignar"}
+              </p>
+            </div>
+            <button
+              onClick={() => toggle(course.id)}
+              disabled={isLoading}
+              className="flex-shrink-0 px-4 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+              style={isEnrolled
+                ? { background: "#fef2f2", color: "#dc2626" }
+                : { background: "#7c3aed", color: "#ffffff" }}>
+              {isLoading ? "..." : isEnrolled ? "Quitar" : "Asignar"}
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ─── Edit modal ────────────────────────────────────────────── */
-function EditModal({ student, tenantSlug, onClose }: { student: Student; tenantSlug: string; onClose: () => void }) {
-  const [tab, setTab] = useState<"info" | "access">("info")
+function EditModal({ student, tenantSlug, availableCourses, onClose }: {
+  student: Student; tenantSlug: string; availableCourses: Course[]; onClose: () => void
+}) {
+  const [tab, setTab] = useState<"info" | "access" | "courses">("info")
 
   /* Info */
   const [info, setInfo] = useState({ name: student.name, email: student.email, status: student.status, subscriptionExpiresAt: student.subscriptionExpiresAt ?? "" })
@@ -138,11 +211,11 @@ function EditModal({ student, tenantSlug, onClose }: { student: Student; tenantS
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: "#f1f5f9" }}>
-        {(["info", "access"] as const).map(t => (
+        {(["info", "courses", "access"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
             style={tab === t ? { background: "#ffffff", color: "#7c3aed", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } : { color: "#94a3b8" }}>
-            {t === "info" ? "Datos" : "Acceso"}
+            {t === "info" ? "Datos" : t === "courses" ? "Cursos" : "Acceso"}
           </button>
         ))}
       </div>
@@ -186,6 +259,15 @@ function EditModal({ student, tenantSlug, onClose }: { student: Student; tenantS
             )}
           </div>
         </form>
+      )}
+
+      {/* Courses tab */}
+      {tab === "courses" && (
+        <CoursesTab
+          student={student}
+          tenantSlug={tenantSlug}
+          availableCourses={availableCourses}
+        />
       )}
 
       {/* Access tab */}
@@ -259,7 +341,7 @@ function StatCard({ icon, label, value, sub, accent }: { icon: string; label: st
 
 /* ─── Main dashboard ────────────────────────────────────────── */
 export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
-  const { tenant, stats, students } = data
+  const { tenant, stats, students, availableCourses } = data
   const [showCreate, setShowCreate]   = useState(false)
   const [editing,    setEditing]      = useState<Student | null>(null)
   const router = useRouter()
@@ -273,7 +355,7 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
   return (
     <div className="min-h-screen" style={{ background: "#f1f5f9" }}>
       {showCreate && <CreateModal tenantSlug={tenantSlug} onClose={() => setShowCreate(false)} />}
-      {editing    && <EditModal student={editing} tenantSlug={tenantSlug} onClose={() => setEditing(null)} />}
+      {editing    && <EditModal student={editing} tenantSlug={tenantSlug} availableCourses={availableCourses} onClose={() => setEditing(null)} />}
 
       {/* Header */}
       <div className="px-8 py-5" style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>

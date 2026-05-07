@@ -14,12 +14,16 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
         where: { role: "STUDENT" },
         include: {
           enrollments: {
-            include: { course: { select: { title: true } } },
+            include: { course: { select: { id: true, title: true } } },
             orderBy: { lastActivityAt: "desc" },
           },
           streak: true,
         },
         orderBy: { createdAt: "desc" },
+      },
+      tenantCourses: {
+        include: { course: { select: { id: true, title: true } } },
+        orderBy: { assignedAt: "asc" },
       },
     },
   })
@@ -70,6 +74,7 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
       streakDays: u.streak?.currentDays ?? 0,
       subscriptionDaysLeft: subDays,
       subscriptionExpiresAt: u.subscriptionExpiresAt?.toISOString().split("T")[0] ?? null,
+      enrolledCourseIds: u.enrollments.map((e) => e.courseId),
     }
   })
 
@@ -84,6 +89,11 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
     (s) => s.subscriptionExpiresAt && new Date(s.subscriptionExpiresAt) <= sevenDaysFromNow
   ).length
 
+  const availableCourses = tenant.tenantCourses.map((tc) => ({
+    id: tc.course.id,
+    title: tc.course.title,
+  }))
+
   return (
     <TenantAdminDashboard
       tenantSlug={slug}
@@ -91,6 +101,7 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
         tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents },
         stats: { activeStudents, avgProgress, atRisk, nearExpiry },
         students,
+        availableCourses,
       }}
     />
   )

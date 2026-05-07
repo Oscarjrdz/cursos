@@ -64,3 +64,17 @@ export async function deleteStudent(userId: string, tenantSlug: string) {
   await prisma.user.delete({ where: { id: userId } })
   revalidatePath(`/${tenantSlug}/dashboard`)
 }
+
+export async function enrollStudent(userId: string, courseId: string, tenantSlug: string) {
+  await prisma.enrollment.upsert({
+    where: { userId_courseId: { userId, courseId } },
+    create: { userId, courseId },
+    update: {},
+  })
+  revalidatePath(`/${tenantSlug}/dashboard`)
+}
+
+export async function unenrollStudent(userId: string, courseId: string, tenantSlug: string) {
+  await prisma.enrollment.deleteMany({ where: { userId, courseId } })
+  revalidatePath(`/${tenantSlug}/dashboard`)
+}
