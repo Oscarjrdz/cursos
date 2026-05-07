@@ -115,12 +115,12 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
         />
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 700,
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 16, fontWeight: 700,
             letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 4 }}>
             Candidatic
           </p>
-          <p style={{ color: "#ffffff", fontSize: 26, fontWeight: 900,
-            letterSpacing: -0.5, lineHeight: 1, margin: 0 }}>
+          <p style={{ color: "#ffffff", fontSize: 36, fontWeight: 900,
+            letterSpacing: -1, lineHeight: 1, margin: 0 }}>
             Knowledge
           </p>
         </div>
