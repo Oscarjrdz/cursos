@@ -369,8 +369,11 @@ function Onboard1({ onNext, studentName }: { onNext: () => void; studentName: st
 }
 
 /* ─── Screen: Onboarding 2 ───────────────────────────────── */
-function Onboard2({ tenantSlug }: { tenantSlug: string }) {
+const CAT3 = "https://cdn-icons-png.flaticon.com/128/11051/11051207.png"
+
+function Onboard2({ tenantSlug, studentName }: { tenantSlug: string; studentName: string }) {
   const router = useRouter()
+  const firstName = studentName.split(" ")[0] || "Alumno"
   return (
     <div style={{
       minHeight: "100dvh",
@@ -382,7 +385,10 @@ function Onboard2({ tenantSlug }: { tenantSlug: string }) {
       <div />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Bubble>
-          <p style={{ color: "#0f172a", fontSize: 16, fontWeight: 700, lineHeight: 1.5, margin: 0 }}>
+          <p style={{ color: "#0f172a", fontSize: 22, fontWeight: 900, lineHeight: 1.3, margin: 0 }}>
+            Todo está listo, <span style={{ color: "#7c3aed" }}>{firstName}</span> 🎉
+          </p>
+          <p style={{ color: "#0f172a", fontSize: 15, fontWeight: 600, lineHeight: 1.5, marginTop: 10, marginBottom: 0 }}>
             Tienes lecciones esperándote.{" "}
             <span style={{ color: "#7c3aed" }}>¡Empecemos!</span> 🚀
           </p>
@@ -390,7 +396,15 @@ function Onboard2({ tenantSlug }: { tenantSlug: string }) {
             Gana XP, mantén tu racha y llega al top
           </p>
         </Bubble>
-        <Cat size={130} />
+        <motion.img
+          src={CAT3}
+          alt=""
+          width={64}
+          height={64}
+          animate={{ y: [0, -10, 0] }}
+          transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+          style={{ display: "block", margin: "4px auto 0" }}
+        />
       </div>
       <div style={{ width: "100%", maxWidth: 340 }}>
         <PurpleBtn
@@ -419,7 +433,7 @@ export default function AlumnoPage() {
     splash:   <SplashScreen onNext={() => setScreen("login")} />,
     login:    <LoginScreen slug={slug} onSuccess={(name) => { setStudentName(name); setScreen("onboard1") }} />,
     onboard1: <Onboard1 onNext={() => setScreen("onboard2")} studentName={studentName} />,
-    onboard2: <Onboard2 tenantSlug={slug} />,
+    onboard2: <Onboard2 tenantSlug={slug} studentName={studentName} />,
   }
 
   return (
