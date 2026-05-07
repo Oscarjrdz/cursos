@@ -828,59 +828,59 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // Find existing course to update, or create new
-  const existing = await prisma.course.findFirst({
-    include: { modules: { include: { lessons: true } } },
-    orderBy: { createdAt: "asc" },
-  })
+  try {
+    // Find or create the course
+    let courseId: string
+    const existing = await prisma.course.findFirst({ orderBy: { createdAt: "asc" } })
 
-  const courseId = existing?.id
+    if (existing) {
+      courseId = existing.id
+      await prisma.module.deleteMany({ where: { courseId } })
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { title: COURSE_TITLE, description: "Curso completo de Reclutamiento Digital y Social Recruiting.", isPublished: true },
+      })
+    } else {
+      const course = await prisma.course.create({
+        data: { title: COURSE_TITLE, description: "Curso completo de Reclutamiento Digital y Social Recruiting.", isPublished: true },
+      })
+      courseId = course.id
+    }
 
-  // Delete old modules (cascades to lessons)
-  if (courseId) {
-    await prisma.module.deleteMany({ where: { courseId } })
-  }
-
-  // Build course with new modules and lessons
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const moduleData: any[] = MODULES.map((mod, modIdx) => ({
-    title: mod.title,
-    order: modIdx + 1,
-    lessons: {
-      create: mod.lessons.map((lesson, lessonIdx) => ({
-        title: lesson.title,
-        order: lessonIdx + 1,
-        contentType: lesson.contentType,
-        xpReward: lesson.xpReward,
-        contentJson: {
-          blocks: [{ type: "paragraph", text: lesson.content }],
-          ...("quiz" in lesson && lesson.quiz ? { quiz: lesson.quiz } : {}),
+    // Create modules one by one to avoid payload limits
+    for (let modIdx = 0; modIdx < MODULES.length; modIdx++) {
+      const mod = MODULES[modIdx]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const created = await (prisma.module as any).create({
+        data: {
+          title: mod.title,
+          order: modIdx + 1,
+          courseId,
         },
-      })),
-    },
-  }))
+      })
 
-  if (courseId) {
-    // Update existing course and add new modules
-    await prisma.course.update({
-      where: { id: courseId },
-      data: {
-        title: COURSE_TITLE,
-        description: "Curso completo de Reclutamiento Digital y Social Recruiting. 9 módulos temáticos con contenido experto y evaluaciones de nivel profesional.",
-        isPublished: true,
-        modules: { create: moduleData },
-      },
-    })
-    return NextResponse.json({ ok: true, courseId, action: "updated", modules: MODULES.length })
-  } else {
-    const course = await prisma.course.create({
-      data: {
-        title: COURSE_TITLE,
-        description: "Curso completo de Reclutamiento Digital y Social Recruiting. 9 módulos temáticos con contenido experto y evaluaciones de nivel profesional.",
-        isPublished: true,
-        modules: { create: moduleData },
-      },
-    })
-    return NextResponse.json({ ok: true, courseId: course.id, action: "created", modules: MODULES.length })
+      for (let lessonIdx = 0; lessonIdx < mod.lessons.length; lessonIdx++) {
+        const lesson = mod.lessons[lessonIdx]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (prisma.lesson as any).create({
+          data: {
+            title: lesson.title,
+            order: lessonIdx + 1,
+            contentType: lesson.contentType,
+            xpReward: lesson.xpReward,
+            moduleId: created.id,
+            contentJson: {
+              blocks: [{ type: "paragraph", text: lesson.content }],
+              ...("quiz" in lesson && lesson.quiz ? { quiz: lesson.quiz } : {}),
+            },
+          },
+        })
+      }
+    }
+
+    return NextResponse.json({ ok: true, courseId, modules: MODULES.length, lessons: MODULES.reduce((a, m) => a + m.lessons.length, 0) })
+  } catch (err) {
+    console.error("rebuild-course error:", err)
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
