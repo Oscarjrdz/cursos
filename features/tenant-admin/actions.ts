@@ -78,3 +78,12 @@ export async function unenrollStudent(userId: string, courseId: string, tenantSl
   await prisma.enrollment.deleteMany({ where: { userId, courseId } })
   revalidatePath(`/${tenantSlug}/dashboard`)
 }
+
+export async function resetStudentProgress(userId: string, tenantSlug: string) {
+  await prisma.$transaction([
+    prisma.lessonCompletion.deleteMany({ where: { userId } }),
+    prisma.enrollment.updateMany({ where: { userId }, data: { progressPct: 0, lastActivityAt: null } }),
+    prisma.streak.updateMany({ where: { userId }, data: { currentDays: 0, longestDays: 0, lastActivityDate: null } }),
+  ])
+  revalidatePath(`/${tenantSlug}/dashboard`)
+}

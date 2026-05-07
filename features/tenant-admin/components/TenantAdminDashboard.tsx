@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { createStudent, updateStudent, setStudentCredentials, deleteStudent, enrollStudent, unenrollStudent } from "@/features/tenant-admin/actions"
+import { createStudent, updateStudent, setStudentCredentials, deleteStudent, enrollStudent, unenrollStudent, resetStudentProgress } from "@/features/tenant-admin/actions"
 
 type Student = {
   id: string
@@ -293,6 +293,89 @@ function EditModal({ student, tenantSlug, availableCourses, onClose }: {
   )
 }
 
+/* ─── Reset confirmation modal ─────────────────────────────── */
+function ResetModal({ student, tenantSlug, onClose }: { student: Student; tenantSlug: string; onClose: () => void }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleConfirm() {
+    setLoading(true)
+    await resetStudentProgress(student.id, tenantSlug)
+    onClose()
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}
+        onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.92, y: 12 }}
+          transition={{ type: "spring", duration: 0.3 }}
+          className="w-full max-w-sm rounded-3xl overflow-hidden"
+          style={{ background: "#ffffff", boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}
+          onClick={e => e.stopPropagation()}>
+
+          {/* Top accent */}
+          <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #f59e0b, #ef4444)" }} />
+
+          <div className="p-6">
+            {/* Icon */}
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: "#fff7ed", border: "2px solid #fed7aa" }}>
+              <span style={{ fontSize: 28 }}>🔄</span>
+            </div>
+
+            {/* Text */}
+            <h2 className="text-lg font-bold text-center mb-1" style={{ color: "#0f172a" }}>
+              Reiniciar progreso
+            </h2>
+            <p className="text-sm text-center mb-1" style={{ color: "#64748b" }}>
+              Estás a punto de reiniciar el avance de
+            </p>
+            <p className="text-sm font-bold text-center mb-4" style={{ color: "#0f172a" }}>
+              {student.name}
+            </p>
+
+            {/* Warning box */}
+            <div className="rounded-2xl p-4 mb-6" style={{ background: "#fff7ed", border: "1px solid #fed7aa" }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: "#92400e" }}>Esto eliminará permanentemente:</p>
+              <ul className="flex flex-col gap-1">
+                {["Todo el progreso de lecciones completadas", "El porcentaje de avance en cada curso", "La racha de días activos"].map(item => (
+                  <li key={item} className="flex items-start gap-2 text-xs" style={{ color: "#78350f" }}>
+                    <span className="mt-0.5 flex-shrink-0" style={{ color: "#f59e0b" }}>✕</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 py-3 rounded-2xl text-sm font-semibold transition-all disabled:opacity-50"
+                style={{ background: "#f1f5f9", color: "#475569" }}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={loading}
+                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-60 active:scale-95"
+                style={{ background: loading ? "#fbbf24" : "linear-gradient(135deg, #f59e0b, #ef4444)", boxShadow: loading ? "none" : "0 4px 12px rgba(239,68,68,0.35)" }}>
+                {loading ? "Reiniciando..." : "Sí, reiniciar"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 /* ─── Shared backdrop ───────────────────────────────────────── */
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
@@ -344,6 +427,7 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
   const { tenant, stats, students, availableCourses } = data
   const [showCreate, setShowCreate]   = useState(false)
   const [editing,    setEditing]      = useState<Student | null>(null)
+  const [resetting,  setResetting]    = useState<Student | null>(null)
   const router = useRouter()
 
   async function handleLogout() {
@@ -356,6 +440,7 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
     <div className="min-h-screen" style={{ background: "#f1f5f9" }}>
       {showCreate && <CreateModal tenantSlug={tenantSlug} onClose={() => setShowCreate(false)} />}
       {editing    && <EditModal student={editing} tenantSlug={tenantSlug} availableCourses={availableCourses} onClose={() => setEditing(null)} />}
+      {resetting  && <ResetModal student={resetting} tenantSlug={tenantSlug} onClose={() => setResetting(null)} />}
 
       {/* Header */}
       <div className="px-8 py-5" style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
@@ -473,11 +558,18 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
                           <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                         </td>
                         <td className="px-5 py-4">
-                          <button onClick={() => setEditing(student)}
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
-                            style={{ background: "#f1f5f9", color: "#475569" }}>
-                            Editar
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setEditing(student)}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
+                              style={{ background: "#f1f5f9", color: "#475569" }}>
+                              Editar
+                            </button>
+                            <button onClick={() => setResetting(student)}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
+                              style={{ background: "#fff7ed", color: "#f59e0b", border: "1px solid #fed7aa" }}>
+                              Reset
+                            </button>
+                          </div>
                         </td>
                       </motion.tr>
                     )
