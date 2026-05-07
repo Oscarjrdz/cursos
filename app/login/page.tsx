@@ -32,64 +32,73 @@ export default function SuperAdminLoginPage() {
     }
   }
 
-  const iStyle = {
-    border: "1px solid #e2e8f0",
-    color: "#0f172a",
-    background: "#fafafa",
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    fontSize: "14px",
-    outline: "none",
-    transition: "border-color 0.15s",
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#f1f5f9" }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(135deg, #f8f4ff 0%, #eef2ff 50%, #f1f5f9 100%)" }}>
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "#7c3aed" }}>
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
+
+        {/* Mascot + Brand */}
+        <div className="flex flex-col items-center mb-8 gap-3">
+          <div className="relative">
+            <div
+              className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-lg"
+              style={{
+                background: "linear-gradient(145deg, #fde68a, #f59e0b)",
+                boxShadow: "0 8px 32px rgba(245,158,11,0.35), 0 2px 8px rgba(0,0,0,0.08)",
+              }}
+            >
+              😺
+            </div>
+            <div
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl flex items-center justify-center text-sm shadow"
+              style={{ background: "#7c3aed" }}
+            >
+              <span className="text-white text-xs font-bold">CK</span>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: "#0f172a" }}>LearnFlow</h1>
-          <p className="text-sm mt-1" style={{ color: "#94a3b8" }}>Acceso Super Administrador</p>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
+              Candidatic Knowledge
+            </h1>
+            <p className="text-xs mt-1 font-medium" style={{ color: "#94a3b8" }}>
+              Acceso Super Administrador
+            </p>
+          </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl p-6 flex flex-col gap-5"
-          style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+        <div
+          className="rounded-3xl p-7 flex flex-col gap-5"
+          style={{
+            background: "#ffffff",
+            boxShadow: "0 4px 32px rgba(124,58,237,0.08), 0 1px 4px rgba(0,0,0,0.06)",
+            border: "1px solid rgba(124,58,237,0.1)",
+          }}
+        >
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium" style={{ color: "#475569" }}>Teléfono</label>
+            <Field label="Teléfono">
               <input
                 type="tel"
                 value={form.phone}
                 onChange={set("phone")}
                 placeholder="8116038195"
-                style={iStyle}
-                onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
-                onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+                className="w-full text-sm outline-none bg-transparent"
+                style={{ color: "#0f172a" }}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium" style={{ color: "#475569" }}>Contraseña</label>
+            </Field>
+
+            <Field label="Contraseña">
               <input
                 type="password"
                 value={form.password}
                 onChange={set("password")}
                 placeholder="••••••••"
-                style={iStyle}
-                onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
-                onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+                className="w-full text-sm outline-none bg-transparent"
+                style={{ color: "#0f172a" }}
               />
-            </div>
+            </Field>
 
             {error && (
-              <p className="text-xs px-3 py-2.5 rounded-xl" style={{ background: "#fef2f2", color: "#dc2626" }}>
+              <p className="text-xs px-3 py-2.5 rounded-xl text-center" style={{ background: "#fef2f2", color: "#dc2626" }}>
                 {error}
               </p>
             )}
@@ -97,13 +106,37 @@ export default function SuperAdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60 mt-1"
-              style={{ background: "#7c3aed" }}
+              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-60 mt-1"
+              style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>
           </form>
         </div>
+
+        <p className="text-center text-xs mt-6" style={{ color: "#cbd5e1" }}>
+          © 2025 Candidatic Knowledge
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const [focused, setFocused] = useState(false)
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-semibold" style={{ color: "#64748b" }}>{label}</label>
+      <div
+        className="flex items-center px-4 py-3 rounded-2xl transition-all"
+        style={{
+          border: `1.5px solid ${focused ? "#7c3aed" : "#e2e8f0"}`,
+          background: focused ? "#faf5ff" : "#fafafa",
+        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
+        {children}
       </div>
     </div>
   )
