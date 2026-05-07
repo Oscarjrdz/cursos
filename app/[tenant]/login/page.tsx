@@ -43,19 +43,14 @@ export default function TenantLoginPage() {
         <div className="flex flex-col items-center mb-8 gap-3">
           <div className="relative">
             <div
-              className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-lg"
+              className="w-28 h-28 rounded-3xl flex items-center justify-center overflow-hidden shadow-lg"
               style={{
-                background: "linear-gradient(145deg, #fde68a, #f59e0b)",
-                boxShadow: "0 8px 32px rgba(245,158,11,0.35), 0 2px 8px rgba(0,0,0,0.08)",
+                background: "#fff",
+                boxShadow: "0 8px 32px rgba(245,158,11,0.25), 0 2px 8px rgba(0,0,0,0.08)",
               }}
             >
-              😺
-            </div>
-            <div
-              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl flex items-center justify-center shadow"
-              style={{ background: "#7c3aed" }}
-            >
-              <span className="text-white text-xs font-bold">CK</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" alt="Mascota" className="w-24 h-24 object-contain" />
             </div>
           </div>
           <div className="text-center">
