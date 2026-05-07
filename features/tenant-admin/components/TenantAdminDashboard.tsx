@@ -285,6 +285,14 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
               <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={14} height={14} alt="" />
               <span className="text-xs font-medium" style={{ color: "#7c3aed" }}>Candidatic Knowledge</span>
             </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-xs" style={{ color: "#94a3b8" }}>Liga alumnos:</span>
+              <a href={`/${tenant.slug}/alumno`} target="_blank"
+                className="text-xs font-semibold hover:underline"
+                style={{ color: "#7c3aed" }}>
+                /{tenant.slug}/alumno
+              </a>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
