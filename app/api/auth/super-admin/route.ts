@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createSession, hashPassword } from "@/lib/session"
+import { createSession } from "@/lib/session"
+import { hashPassword } from "@/lib/crypto"
 
 const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE ?? "8116038195"
 const SUPER_ADMIN_PASSWORD_HASH = hashPassword(process.env.SUPER_ADMIN_PASSWORD ?? "1983")

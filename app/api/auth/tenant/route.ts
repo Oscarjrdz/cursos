@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createSession, hashPassword } from "@/lib/session"
+import { createSession } from "@/lib/session"
+import { hashPassword } from "@/lib/crypto"
 import { prisma } from "@/lib/prisma"
 
 export async function POST(req: NextRequest) {

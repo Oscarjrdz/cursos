@@ -1,34 +1,51 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { verifySession, getSessionFromRequest } from "@/lib/session"
 
-// Rutas que no pertenecen a ningún tenant
-const PUBLIC_PATHS = ["/", "/login", "/api", "/_next", "/favicon.ico"]
+const PUBLIC_EXACT = ["/", "/login"]
+const PUBLIC_PREFIXES = ["/api", "/_next", "/favicon.ico"]
 
-// Rutas exclusivas del Super Admin
-const SUPER_ADMIN_PATHS = ["/admin"]
-
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Saltar rutas públicas y de sistema
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Allow public paths
+  if (PUBLIC_EXACT.includes(pathname)) return NextResponse.next()
+  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next()
+
+  // Allow tenant login pages: /[slug]/login
+  if (/^\/[^/]+\/login$/.test(pathname)) return NextResponse.next()
+
+  const token = getSessionFromRequest(request)
+  const session = token ? await verifySession(token) : null
+
+  // Protect /admin/* → must be SUPER_ADMIN
+  if (pathname.startsWith("/admin")) {
+    if (session?.role !== "SUPER_ADMIN") {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
     return NextResponse.next()
   }
 
-  // Rutas /admin → solo Super Admin (TODO: validar con Clerk)
-  if (SUPER_ADMIN_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next()
+  // Protect /[slug]/dashboard and /[slug]/home
+  const tenantMatch = pathname.match(/^\/([^/]+)\/(dashboard|home)/)
+  if (tenantMatch) {
+    const slug = tenantMatch[1]
+    if (!session) {
+      return NextResponse.redirect(new URL(`/${slug}/login`, request.url))
+    }
+    if (session.role === "SUPER_ADMIN") return NextResponse.next()
+    if (session.role === "TENANT_ADMIN" && session.tenantSlug === slug) {
+      return NextResponse.next()
+    }
+    return NextResponse.redirect(new URL(`/${slug}/login`, request.url))
   }
 
-  // Rutas /[tenant]/... → extraer slug y pasarlo como header
+  // Pass tenant slug as header for other tenant routes
   const segments = pathname.split("/").filter(Boolean)
-  const tenantSlug = segments[0]
-
-  if (tenantSlug) {
-    const response = NextResponse.next()
-    // El header x-tenant-slug lo leen los Server Components y Server Actions
-    response.headers.set("x-tenant-slug", tenantSlug)
-    return response
+  if (segments.length > 0) {
+    const res = NextResponse.next()
+    res.headers.set("x-tenant-slug", segments[0])
+    return res
   }
 
   return NextResponse.next()

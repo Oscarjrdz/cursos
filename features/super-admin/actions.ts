@@ -67,8 +67,8 @@ export async function setTenantCredentials(
   tenantId: string,
   data: { phone: string; password: string }
 ) {
-  const crypto = await import("crypto")
-  const hashedPassword = crypto.createHash("sha256").update(data.password + "lf_salt").digest("hex")
+  const { hashPassword } = await import("@/lib/crypto")
+  const hashedPassword = hashPassword(data.password)
 
   await prisma.tenant.update({
     where: { id: tenantId },

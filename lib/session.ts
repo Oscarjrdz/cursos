@@ -55,7 +55,3 @@ export function getSessionFromRequest(req: NextRequest): string | undefined {
   return req.cookies.get(COOKIE_NAME)?.value
 }
 
-export function hashPassword(password: string): string {
-  const crypto = require("crypto") as typeof import("crypto")
-  return crypto.createHash("sha256").update(password + "lf_salt").digest("hex")
-}
