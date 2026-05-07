@@ -38,30 +38,37 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Try student login — allow any status except SUSPENDED
-  const student = await prisma.user.findFirst({
+  // Find student by phone alone first (to give specific error)
+  const studentByPhone = await prisma.user.findFirst({
     where: {
       tenantId: tenant.id,
       phone: phone,
-      password: hashed,
       role: "STUDENT",
       status: { not: "SUSPENDED" },
     },
-    select: { id: true, name: true },
+    select: { id: true, name: true, password: true },
   })
 
-  if (!student) {
-    return NextResponse.json({ error: "Teléfono o contraseña incorrectos" }, { status: 401 })
+  if (!studentByPhone) {
+    return NextResponse.json({ error: "Teléfono no registrado en este cliente" }, { status: 401 })
+  }
+
+  if (!studentByPhone.password) {
+    return NextResponse.json({ error: "Este alumno aún no tiene contraseña configurada" }, { status: 401 })
+  }
+
+  if (studentByPhone.password !== hashed) {
+    return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 })
   }
 
   const token = await createSession({
     role: "STUDENT",
     tenantId: tenant.id,
     tenantSlug: tenant.slug,
-    userId: student.id,
+    userId: studentByPhone.id,
   })
 
-  const res = NextResponse.json({ ok: true, role: "STUDENT", name: student.name })
+  const res = NextResponse.json({ ok: true, role: "STUDENT", name: studentByPhone.name })
   res.cookies.set("lf_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

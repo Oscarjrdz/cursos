@@ -213,9 +213,8 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
         style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
 
         {/* Phone field */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
-            textTransform: "uppercase", color: "#7c3aed", textAlign: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#7c3aed", textAlign: "center", lineHeight: 1.4 }}>
             Teléfono
           </p>
           <div
@@ -232,7 +231,7 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
               transition: "all 0.15s",
             }}
           >
-            <span style={{ fontSize: 20 }}>📱</span>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>📱</span>
             <input
               type="tel"
               value={form.phone}
@@ -241,18 +240,17 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
               autoComplete="tel"
               inputMode="numeric"
               style={{
-                flex: 1, fontSize: 17, fontWeight: 600, textAlign: "center",
+                flex: 1, fontSize: 16, fontWeight: 700, textAlign: "center",
                 color: "#0f172a", background: "transparent",
-                border: "none", outline: "none", letterSpacing: 1,
+                border: "none", outline: "none",
               }}
             />
           </div>
         </div>
 
         {/* Password field */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
-            textTransform: "uppercase", color: "#7c3aed", textAlign: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#7c3aed", textAlign: "center", lineHeight: 1.4 }}>
             Contraseña
           </p>
           <div
@@ -269,7 +267,7 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
               transition: "all 0.15s",
             }}
           >
-            <span style={{ fontSize: 20 }}>🔒</span>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
             <input
               type="password"
               value={form.password}
@@ -277,9 +275,9 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
               placeholder="Tu contraseña"
               autoComplete="current-password"
               style={{
-                flex: 1, fontSize: 17, fontWeight: 600, textAlign: "center",
+                flex: 1, fontSize: 16, fontWeight: 700, textAlign: "center",
                 color: "#0f172a", background: "transparent",
-                border: "none", outline: "none", letterSpacing: 3,
+                border: "none", outline: "none",
               }}
             />
           </div>
@@ -289,9 +287,9 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
           <motion.p
             initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
             style={{
-              fontSize: 13, textAlign: "center", padding: "10px 14px",
+              fontSize: 14, fontWeight: 700, textAlign: "center", padding: "12px 16px",
               borderRadius: 14, background: "#fef2f2", color: "#dc2626", margin: 0,
-              border: "1px solid #fecaca",
+              border: "1px solid #fecaca", lineHeight: 1.4,
             }}
           >
             {error}
@@ -309,12 +307,11 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
                 ? "#c4b5fd" : "linear-gradient(135deg, #7c3aed, #6d28d9)",
               boxShadow: loading || !form.phone || !form.password
                 ? "none" : "0 4px 0 #5b21b6",
-              color: "#ffffff", fontSize: 15, fontWeight: 900,
-              letterSpacing: "0.12em", textTransform: "uppercase",
-              border: "none", cursor: "pointer",
+              color: "#ffffff", fontSize: 16, fontWeight: 700,
+              border: "none", cursor: "pointer", lineHeight: 1.4,
             }}
           >
-            {loading ? "ENTRANDO..." : "ENTRAR →"}
+            {loading ? "Entrando..." : "Entrar →"}
           </motion.button>
         </div>
       </form>
