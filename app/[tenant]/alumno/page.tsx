@@ -8,31 +8,36 @@ type Screen = "splash" | "login" | "onboard1" | "onboard2"
 
 const CAT = "https://cdn-icons-png.flaticon.com/128/11051/11051168.png"
 
+/* ─── Safe bottom padding ───────────────────────────────── */
+const safeBottom = "max(env(safe-area-inset-bottom, 0px), 24px)"
+
 /* ─── Speech bubble ─────────────────────────────────────── */
 function Bubble({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative">
+    <div style={{ width: "100%" }}>
       <div
-        className="px-6 py-4 rounded-3xl text-center max-w-xs mx-auto"
         style={{
           background: "#ffffff",
           boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
           border: "1.5px solid #e2e8f0",
+          borderRadius: 24,
+          padding: "16px 20px",
+          textAlign: "center",
+          maxWidth: 300,
+          margin: "0 auto",
         }}
       >
         {children}
       </div>
-      {/* tail pointing down */}
-      <div
-        style={{
-          width: 0, height: 0,
-          borderLeft: "12px solid transparent",
-          borderRight: "12px solid transparent",
-          borderTop: "14px solid #ffffff",
-          margin: "0 auto",
-          filter: "drop-shadow(0 3px 2px rgba(0,0,0,0.06))",
-        }}
-      />
+      {/* tail pointing down to cat */}
+      <div style={{
+        width: 0, height: 0,
+        borderLeft: "12px solid transparent",
+        borderRight: "12px solid transparent",
+        borderTop: "14px solid #ffffff",
+        margin: "0 auto",
+        filter: "drop-shadow(0 3px 2px rgba(0,0,0,0.05))",
+      }} />
     </div>
   )
 }
@@ -42,35 +47,39 @@ function Cat({ size }: { size: number }) {
   return (
     <motion.img
       src={CAT}
-      alt="Kiti"
+      alt=""
       width={size}
       height={size}
       animate={{ y: [0, -10, 0] }}
-      transition={{ repeat: Infinity, duration: 2.6, ease: "easeInOut" }}
-      style={{ display: "block" }}
+      transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+      style={{ display: "block", margin: "0 auto" }}
     />
   )
 }
 
-/* ─── Continue button ───────────────────────────────────── */
-function ContinueBtn({
-  label = "CONTINUAR",
-  onClick,
-  disabled,
-  style,
-}: {
-  label?: string
-  onClick: () => void
-  disabled?: boolean
-  style?: React.CSSProperties
+/* ─── Purple button ─────────────────────────────────────── */
+function PurpleBtn({ label, onClick, disabled }: {
+  label: string; onClick: () => void; disabled?: boolean
 }) {
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
       disabled={disabled}
-      className="w-full py-4 rounded-2xl text-sm font-black tracking-widest text-white uppercase disabled:opacity-50 transition-all"
-      style={{ background: "#7c3aed", boxShadow: "0 4px 0 #5b21b6", ...style }}
+      style={{
+        width: "100%",
+        padding: "18px",
+        borderRadius: 20,
+        background: disabled ? "#c4b5fd" : "#7c3aed",
+        boxShadow: disabled ? "none" : "0 4px 0 #5b21b6",
+        color: "#ffffff",
+        fontSize: 14,
+        fontWeight: 900,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
     >
       {label}
     </motion.button>
@@ -80,46 +89,57 @@ function ContinueBtn({
 /* ─── Screen: Splash ────────────────────────────────────── */
 function SplashScreen({ onNext }: { onNext: () => void }) {
   return (
-    <div
-      className="flex flex-col items-center justify-between min-h-screen px-6 py-12"
-      style={{ background: "#7c3aed" }}
-    >
+    <div style={{
+      minHeight: "100dvh",
+      background: "#7c3aed",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: `env(safe-area-inset-top, 48px) 32px ${safeBottom}`,
+    }}>
       <div />
 
-      {/* Cat centered */}
-      <div className="flex flex-col items-center gap-6">
+      {/* Cat + brand */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
         <motion.img
           src={CAT}
-          alt="Kiti"
+          alt=""
           width={160}
           height={160}
           animate={{ y: [0, -14, 0] }}
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
         />
-        <div className="text-center">
-          <p className="text-white/70 text-sm font-semibold tracking-widest uppercase mb-1">
+        <div style={{ textAlign: "center" }}>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 700,
+            letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 4 }}>
             Candidatic
           </p>
-          <h1
-            className="text-white font-black"
-            style={{ fontSize: 42, letterSpacing: -1, lineHeight: 1 }}
-          >
+          <h1 style={{ color: "#ffffff", fontSize: 44, fontWeight: 900,
+            letterSpacing: -1, lineHeight: 1, margin: 0 }}>
             Knowledge
           </h1>
         </div>
       </div>
 
       {/* CTA */}
-      <div className="w-full max-w-xs space-y-3">
+      <div style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 12 }}>
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={onNext}
-          className="w-full py-4 rounded-2xl text-sm font-black tracking-widest uppercase transition-all"
-          style={{ background: "#ffffff", color: "#7c3aed", boxShadow: "0 4px 0 rgba(0,0,0,0.15)" }}
+          style={{
+            width: "100%", padding: "18px", borderRadius: 20,
+            background: "#ffffff", color: "#7c3aed",
+            fontSize: 14, fontWeight: 900, letterSpacing: "0.1em",
+            textTransform: "uppercase", border: "none", cursor: "pointer",
+            boxShadow: "0 4px 0 rgba(0,0,0,0.15)",
+          }}
         >
           COMENZAR
         </motion.button>
-        <p className="text-white/50 text-center text-xs">Acceso para alumnos</p>
+        <p style={{ color: "rgba(255,255,255,0.45)", textAlign: "center", fontSize: 12, margin: 0 }}>
+          Acceso exclusivo para alumnos
+        </p>
       </div>
     </div>
   )
@@ -130,13 +150,14 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
   const [form, setForm] = useState({ phone: "", password: "" })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [focused, setFocused] = useState<string | null>(null)
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const [focused, setFocused] = useState<string | null>(null)
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.phone || !form.password) return
     setLoading(true); setError("")
     try {
       const res = await fetch("/api/auth/tenant", {
@@ -156,65 +177,85 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 pt-14 pb-10"
-      style={{ background: "#ffffff" }}>
-
+    <div style={{
+      minHeight: "100dvh",
+      background: "#ffffff",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: `max(env(safe-area-inset-top, 0px), 48px) 24px ${safeBottom}`,
+    }}>
       {/* Cat + bubble */}
-      <div className="flex flex-col items-center gap-0 mb-8 w-full">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
         <Bubble>
-          <p className="text-sm font-bold" style={{ color: "#0f172a" }}>
-            ¡Hola! Ingresa tus credenciales para continuar
+          <p style={{ color: "#0f172a", fontSize: 15, fontWeight: 700, lineHeight: 1.4, margin: 0 }}>
+            ¡Hola! Ingresa tus datos para continuar
           </p>
         </Bubble>
-        <div className="mt-1">
-          <Cat size={100} />
-        </div>
+        <Cat size={96} />
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="w-full max-w-xs flex flex-col gap-4 flex-1">
+      <form onSubmit={handleSubmit}
+        style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
         {[
-          { key: "phone", label: "Teléfono", type: "tel", placeholder: "8116038195" },
+          { key: "phone",    label: "Teléfono",   type: "tel",      placeholder: "8116038195" },
           { key: "password", label: "Contraseña", type: "password", placeholder: "••••••••" },
         ].map(({ key, label, type, placeholder }) => (
-          <div key={key} className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold" style={{ color: "#64748b" }}>{label}</label>
+          <div key={key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{label}</label>
             <div
-              className="flex items-center px-4 py-3.5 rounded-2xl transition-all"
-              style={{
-                border: `2px solid ${focused === key ? "#7c3aed" : "#e2e8f0"}`,
-                background: focused === key ? "#faf5ff" : "#f8fafc",
-              }}
               onFocus={() => setFocused(key)}
               onBlur={() => setFocused(null)}
+              style={{
+                display: "flex", alignItems: "center",
+                padding: "14px 16px", borderRadius: 16,
+                border: `2px solid ${focused === key ? "#7c3aed" : "#e2e8f0"}`,
+                background: focused === key ? "#faf5ff" : "#f8fafc",
+                transition: "border-color 0.15s, background 0.15s",
+              }}
             >
               <input
                 type={type}
                 value={form[key as keyof typeof form]}
                 onChange={set(key as keyof typeof form)}
                 placeholder={placeholder}
-                className="w-full text-sm outline-none bg-transparent font-medium"
-                style={{ color: "#0f172a" }}
+                autoComplete={key === "phone" ? "tel" : "current-password"}
+                style={{
+                  width: "100%", fontSize: 16, fontWeight: 500,
+                  color: "#0f172a", background: "transparent",
+                  border: "none", outline: "none",
+                }}
               />
             </div>
           </div>
         ))}
 
         {error && (
-          <p className="text-xs text-center px-3 py-2.5 rounded-xl"
-            style={{ background: "#fef2f2", color: "#dc2626" }}>
+          <p style={{
+            fontSize: 13, textAlign: "center", padding: "10px 14px",
+            borderRadius: 12, background: "#fef2f2", color: "#dc2626", margin: 0,
+          }}>
             {error}
           </p>
         )}
 
-        <div className="mt-auto pt-4">
-          <ContinueBtn
-            label={loading ? "Entrando..." : "ENTRAR"}
-            onClick={() => {}}
-            disabled={loading}
-            style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9)" }}
-          />
-          <button type="submit" className="hidden" />
+        <div style={{ marginTop: "auto", paddingTop: 8 }}>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            type="submit"
+            disabled={loading || !form.phone || !form.password}
+            style={{
+              width: "100%", padding: "18px", borderRadius: 20,
+              background: loading || !form.phone || !form.password ? "#c4b5fd" : "#7c3aed",
+              boxShadow: "0 4px 0 #5b21b6",
+              color: "#ffffff", fontSize: 14, fontWeight: 900,
+              letterSpacing: "0.1em", textTransform: "uppercase",
+              border: "none", cursor: "pointer",
+            }}
+          >
+            {loading ? "ENTRANDO..." : "ENTRAR"}
+          </motion.button>
         </div>
       </form>
     </div>
@@ -222,26 +263,27 @@ function LoginScreen({ slug, onSuccess }: { slug: string; onSuccess: () => void 
 }
 
 /* ─── Screen: Onboarding 1 ───────────────────────────────── */
-function Onboard1({ name, onNext }: { name?: string; onNext: () => void }) {
+function Onboard1({ onNext }: { onNext: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen px-6 pt-16 pb-10"
-      style={{ background: "#ffffff" }}>
+    <div style={{
+      minHeight: "100dvh",
+      background: "#ffffff",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "space-between",
+      padding: `max(env(safe-area-inset-top, 0px), 56px) 24px ${safeBottom}`,
+    }}>
       <div />
-
-      <div className="flex flex-col items-center gap-0 w-full">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Bubble>
-          <p className="text-base font-bold leading-snug" style={{ color: "#0f172a" }}>
-            {name ? `¡Hola, ${name}! ` : "¡Hola! "}
-            Soy <span style={{ color: "#7c3aed" }}>Kiti</span>, tu asistente de aprendizaje 🐱
+          <p style={{ color: "#0f172a", fontSize: 16, fontWeight: 700, lineHeight: 1.5, margin: 0 }}>
+            ¡Hola! Soy <span style={{ color: "#7c3aed" }}>Kiti</span>,{" "}
+            tu asistente de aprendizaje 🐱
           </p>
         </Bubble>
-        <div className="mt-1">
-          <Cat size={120} />
-        </div>
+        <Cat size={130} />
       </div>
-
-      <div className="w-full max-w-xs">
-        <ContinueBtn onClick={onNext} />
+      <div style={{ width: "100%", maxWidth: 340 }}>
+        <PurpleBtn label="CONTINUAR" onClick={onNext} />
       </div>
     </div>
   )
@@ -251,27 +293,28 @@ function Onboard1({ name, onNext }: { name?: string; onNext: () => void }) {
 function Onboard2({ tenantSlug }: { tenantSlug: string }) {
   const router = useRouter()
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen px-6 pt-16 pb-10"
-      style={{ background: "#ffffff" }}>
+    <div style={{
+      minHeight: "100dvh",
+      background: "#ffffff",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "space-between",
+      padding: `max(env(safe-area-inset-top, 0px), 56px) 24px ${safeBottom}`,
+    }}>
       <div />
-
-      <div className="flex flex-col items-center gap-0 w-full">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         <Bubble>
-          <p className="text-base font-bold leading-snug" style={{ color: "#0f172a" }}>
+          <p style={{ color: "#0f172a", fontSize: 16, fontWeight: 700, lineHeight: 1.5, margin: 0 }}>
             Tienes lecciones esperándote.{" "}
             <span style={{ color: "#7c3aed" }}>¡Empecemos!</span> 🚀
           </p>
-          <p className="text-xs mt-2 font-medium" style={{ color: "#94a3b8" }}>
-            Gana XP, mantén tu racha y llega al top del ranking
+          <p style={{ color: "#94a3b8", fontSize: 13, fontWeight: 500, marginTop: 8, marginBottom: 0 }}>
+            Gana XP, mantén tu racha y llega al top
           </p>
         </Bubble>
-        <div className="mt-1">
-          <Cat size={120} />
-        </div>
+        <Cat size={130} />
       </div>
-
-      <div className="w-full max-w-xs">
-        <ContinueBtn
+      <div style={{ width: "100%", maxWidth: 340 }}>
+        <PurpleBtn
           label="COMENZAR MI CURSO"
           onClick={() => router.push(`/${tenantSlug}/home`)}
         />
@@ -284,30 +327,24 @@ function Onboard2({ tenantSlug }: { tenantSlug: string }) {
 export default function AlumnoPage() {
   const params = useParams()
   const slug = params.tenant as string
-
   const [screen, setScreen] = useState<Screen>("splash")
-  const [studentName, setStudentName] = useState<string | undefined>()
 
-  const screens: Record<Screen, React.ReactNode> = {
-    splash: <SplashScreen onNext={() => setScreen("login")} />,
-    login: (
-      <LoginScreen
-        slug={slug}
-        onSuccess={() => setScreen("onboard1")}
-      />
-    ),
-    onboard1: <Onboard1 name={studentName} onNext={() => setScreen("onboard2")} />,
+  const slideVariants = {
+    enter:  { x: "100%", opacity: 0 },
+    center: { x: 0,       opacity: 1 },
+    exit:   { x: "-40%",  opacity: 0 },
+  }
+
+  const content: Record<Screen, React.ReactNode> = {
+    splash:   <SplashScreen onNext={() => setScreen("login")} />,
+    login:    <LoginScreen slug={slug} onSuccess={() => setScreen("onboard1")} />,
+    onboard1: <Onboard1 onNext={() => setScreen("onboard2")} />,
     onboard2: <Onboard2 tenantSlug={slug} />,
   }
 
-  const slideVariants = {
-    enter: { x: "100%", opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: "-100%", opacity: 0 },
-  }
-
   return (
-    <div className="overflow-hidden" style={{ maxWidth: 430, margin: "0 auto", minHeight: "100svh" }}>
+    /* fixed container clips slide animation without hiding content */
+    <div style={{ position: "fixed", inset: 0, overflowX: "hidden" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={screen}
@@ -315,9 +352,10 @@ export default function AlumnoPage() {
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ type: "tween", duration: 0.28, ease: "easeInOut" }}
+          transition={{ type: "tween", duration: 0.28, ease: [0.32, 0, 0.67, 0] }}
+          style={{ position: "absolute", inset: 0, overflowY: "auto" }}
         >
-          {screens[screen]}
+          {content[screen]}
         </motion.div>
       </AnimatePresence>
     </div>
