@@ -10,6 +10,10 @@ const LessonSchema = z.object({
   contentType: z.enum(["TEXT", "QUIZ", "TEXT_AND_QUIZ"]),
   content: z.string().min(1),
   xpReward: z.coerce.number().min(5).max(100),
+  question: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  correctIndex: z.coerce.number().optional(),
+  explanation: z.string().optional(),
 })
 
 const ModuleSchema = z.object({
@@ -59,7 +63,15 @@ export async function createCourse(
               title: lesson.title,
               order: lessonIdx + 1,
               contentType: lesson.contentType,
-              contentJson: { blocks: [{ type: "paragraph", text: lesson.content }] },
+              contentJson: {
+                blocks: [{ type: "paragraph", text: lesson.content }],
+                ...(lesson.question !== undefined && {
+                  question: lesson.question,
+                  options: lesson.options,
+                  correctIndex: lesson.correctIndex,
+                  explanation: lesson.explanation,
+                }),
+              },
               xpReward: lesson.xpReward,
             })),
           },

@@ -18,9 +18,19 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta, sin texto adici
       "lessons": [
         {
           "title": "Título de la lección",
-          "contentType": "TEXT" | "TEXT_AND_QUIZ",
+          "contentType": "TEXT",
           "content": "Contenido educativo detallado de la lección (3-5 párrafos)",
           "xpReward": 10
+        },
+        {
+          "title": "Título de lección con quiz",
+          "contentType": "TEXT_AND_QUIZ",
+          "content": "Contenido educativo detallado de la lección (3-5 párrafos)",
+          "question": "¿Pregunta de comprensión sobre el contenido?",
+          "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+          "correctIndex": 0,
+          "explanation": "Explicación breve de por qué esa respuesta es correcta",
+          "xpReward": 20
         }
       ]
     }
@@ -31,7 +41,8 @@ Reglas CRÍTICAS:
 - DEBES cubrir el 100% del contenido del documento, sin omitir ningún tema, módulo o sección
 - Si el documento tiene módulos explícitos (ej. "Módulo 1", "Módulo 2"...), crea un módulo del curso por cada uno
 - Cada módulo debe tener entre 1 y 4 lecciones según su profundidad
-- La última lección de cada módulo debe ser TEXT_AND_QUIZ
+- La última lección de cada módulo debe ser TEXT_AND_QUIZ (con question, options, correctIndex y explanation)
+- Las lecciones TEXT_AND_QUIZ deben tener exactamente 4 opciones; correctIndex es el índice (0-3) de la correcta
 - El contenido de cada lección debe ser claro, detallado y educativo, expandiendo lo del documento
 - xpReward entre 10 y 30 según complejidad de la lección
 - Responde en el mismo idioma del documento

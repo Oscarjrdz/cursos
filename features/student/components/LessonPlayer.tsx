@@ -24,7 +24,17 @@ type QuizState = "idle" | "correct" | "wrong"
 
 /* ─── Parse content ──────────────────────────────────────── */
 function parseContent(contentJson: Record<string, unknown>) {
-  const content = (contentJson.content ?? contentJson.text ?? "") as string
+  // Handle blocks format: { blocks: [{ type, text }] }
+  let content = ""
+  if (Array.isArray(contentJson.blocks)) {
+    content = (contentJson.blocks as { type: string; text: string }[])
+      .map((b) => b.text ?? "")
+      .filter(Boolean)
+      .join("\n\n")
+  } else {
+    content = ((contentJson.content ?? contentJson.text ?? "") as string)
+  }
+
   const question = contentJson.question as string | undefined
   const options = contentJson.options as string[] | undefined
   const correctIndex = contentJson.correctIndex as number | undefined
