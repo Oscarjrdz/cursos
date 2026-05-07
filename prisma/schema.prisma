@@ -45,6 +45,8 @@ model User {
   avatarUrl             String?
   role                  UserRole
   tenantId              String?
+  phone                 String?
+  password              String?
   subscriptionExpiresAt DateTime?
   status                UserStatus @default(ACTIVE)
   createdAt             DateTime   @default(now())

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
+import { hashPassword } from "@/lib/crypto"
 
 export async function createStudent(
   tenantSlug: string,
@@ -24,6 +25,38 @@ export async function createStudent(
     },
   })
 
+  revalidatePath(`/${tenantSlug}/dashboard`)
+}
+
+export async function updateStudent(
+  tenantSlug: string,
+  userId: string,
+  data: { name: string; email: string; status: string; subscriptionExpiresAt?: string }
+) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: data.name,
+      email: data.email,
+      status: data.status as "ACTIVE" | "INACTIVE" | "EXPIRED" | "SUSPENDED",
+      subscriptionExpiresAt: data.subscriptionExpiresAt ? new Date(data.subscriptionExpiresAt) : null,
+    },
+  })
+  revalidatePath(`/${tenantSlug}/dashboard`)
+}
+
+export async function setStudentCredentials(
+  tenantSlug: string,
+  userId: string,
+  data: { phone: string; password: string }
+) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      phone: data.phone,
+      password: hashPassword(data.password),
+    },
+  })
   revalidatePath(`/${tenantSlug}/dashboard`)
 }
 

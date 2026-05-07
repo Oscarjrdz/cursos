@@ -59,6 +59,8 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
       id: u.id,
       name: u.name,
       email: u.email,
+      phone: u.phone ?? null,
+      hasPassword: !!u.password,
       status: u.status as "ACTIVE" | "INACTIVE" | "EXPIRED" | "SUSPENDED",
       courseName: primaryEnrollment?.course.title ?? null,
       courseCount: u.enrollments.length,
