@@ -835,6 +835,10 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       courseId = existing.id
+      // Clear completions and enrollments before deleting lessons/modules
+      const lessonIds = await prisma.lesson.findMany({ where: { module: { courseId } }, select: { id: true } })
+      await prisma.lessonCompletion.deleteMany({ where: { lessonId: { in: lessonIds.map(l => l.id) } } })
+      await prisma.enrollment.updateMany({ where: { courseId }, data: { progressPct: 0, lastActivityAt: null } })
       await prisma.module.deleteMany({ where: { courseId } })
       await prisma.course.update({
         where: { id: courseId },
