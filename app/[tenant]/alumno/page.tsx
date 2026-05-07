@@ -109,8 +109,8 @@ function SplashScreen({ onNext }: { onNext: () => void }) {
         <motion.img
           src={CAT}
           alt=""
-          width={96}
-          height={96}
+          width={64}
+          height={64}
           animate={{ y: [0, -10, 0] }}
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
         />
