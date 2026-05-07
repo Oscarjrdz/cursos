@@ -281,6 +281,10 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
           <div>
             <p className="text-xs font-medium" style={{ color: "#94a3b8" }}>Dashboard Admin</p>
             <h1 className="text-2xl font-bold mt-0.5" style={{ color: "#0f172a" }}>{tenant.name}</h1>
+            <div className="flex items-center gap-1.5 mt-1">
+              <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={14} height={14} alt="" />
+              <span className="text-xs font-medium" style={{ color: "#7c3aed" }}>Candidatic Knowledge</span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
@@ -344,6 +348,10 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
                             <div>
                               <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{student.name}</p>
                               <p className="text-xs" style={{ color: "#94a3b8" }}>{student.email}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={10} height={10} alt="" />
+                                <span className="text-xs" style={{ color: "#a78bfa" }}>Candidatic Knowledge</span>
+                              </div>
                             </div>
                           </div>
                         </td>
