@@ -38,18 +38,8 @@ export default function SuperAdminLoginPage() {
 
         {/* Mascot + Brand */}
         <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="relative">
-            <div
-              className="w-28 h-28 rounded-3xl flex items-center justify-center overflow-hidden shadow-lg"
-              style={{
-                background: "#fff",
-                boxShadow: "0 8px 32px rgba(245,158,11,0.25), 0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" alt="Mascota" className="w-24 h-24 object-contain" />
-            </div>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" alt="Mascota" width={80} height={80} style={{ imageRendering: "auto" }} />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#0f172a" }}>
               Candidatic Knowledge
