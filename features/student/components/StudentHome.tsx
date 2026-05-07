@@ -4,21 +4,8 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
-type Lesson = {
-  id: string
-  title: string
-  order: number
-  completed: boolean
-  isCurrent: boolean
-}
-
-type Module = {
-  id: string
-  title: string
-  order: number
-  lessons: Lesson[]
-}
-
+type Lesson = { id: string; title: string; order: number; completed: boolean; isCurrent: boolean }
+type Module = { id: string; title: string; order: number; lessons: Lesson[] }
 type Props = {
   tenantSlug: string
   student: { name: string; xpTotal: number }
@@ -28,37 +15,124 @@ type Props = {
   progressPct: number
 }
 
-const MODULE_COLORS = [
-  "#7c3aed", "#2563eb", "#059669", "#d97706", "#e11d48",
-  "#0891b2", "#7c3aed", "#059669",
-]
+/* ─── SVG Icons ──────────────────────────────────────────────── */
+const IconFlame = ({ size = 22, color = "#FF9600" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 2s-5 6.5-5 11a5 5 0 0010 0c0-4.5-5-11-5-11zm0 14a2 2 0 01-2-2c0-1.8 2-5 2-5s2 3.2 2 5a2 2 0 01-2 2z"
+      fill={color} />
+  </svg>
+)
 
-const NODE_ICONS = ["📖", "💡", "🎯", "🏋️", "⭐", "🚀", "💎", "🔑", "🌟", "🎪", "📝", "🧠"]
+const IconGem = ({ size = 20, color = "#7c3aed" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M6 3h12l4 6-10 12L2 9l4-6z" fill={color} opacity={0.85} />
+    <path d="M2 9h20M6 3l4 6m4 0l4-6M12 21L8 9m4 0l4 12" stroke="white" strokeWidth="1.2" strokeOpacity="0.3" />
+  </svg>
+)
 
-/* ─── Bottom Nav ─────────────────────────────────────────── */
+const IconCheck = ({ size = 30, color = "white" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12l5 5L20 7" />
+  </svg>
+)
+
+const IconLock = ({ size = 26, color = "#94a3b8" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <rect x="5" y="11" width="14" height="10" rx="2" fill={color} fillOpacity="0.15" stroke={color} />
+    <path d="M8 11V7a4 4 0 018 0v4" />
+    <circle cx="12" cy="16" r="1.5" fill={color} />
+  </svg>
+)
+
+const IconBook = ({ size = 28, color = "white" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+    <path d="M9 7h6M9 11h4" />
+  </svg>
+)
+
+const IconStar = ({ filled, size = 14 }: { filled: boolean; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#FFCC00" : "#CBD5E1"} stroke={filled ? "#F59E0B" : "#CBD5E1"} strokeWidth="1">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </svg>
+)
+
+const IconHome = ({ active }: { active: boolean }) => (
+  <svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <path d="M3 12L12 3l9 9" stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M5 10v10a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1V10" fill={active ? "#7c3aed" : "none"} fillOpacity="0.15"
+      stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const IconTrophy = ({ active }: { active: boolean }) => (
+  <svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <path d="M8 21h8M12 17v4" stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+    <path d="M5 4h14v8a7 7 0 01-14 0V4z" fill={active ? "#7c3aed" : "none"} fillOpacity="0.15"
+      stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" />
+    <path d="M5 7H2v3a3 3 0 003 3M19 7h3v3a3 3 0 01-3 3" stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const IconShield = ({ active }: { active: boolean }) => (
+  <svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z"
+      fill={active ? "#7c3aed" : "none"} fillOpacity="0.15"
+      stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+    <path d="M9 12l2 2 4-4" stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const IconUser = ({ active }: { active: boolean }) => (
+  <svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="8" r="4" fill={active ? "#7c3aed" : "none"} fillOpacity="0.15"
+      stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" />
+    <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7" stroke={active ? "#7c3aed" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+const IconPlay = ({ size = 18, color = "white" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <path d="M8 5v14l11-7L8 5z" />
+  </svg>
+)
+
+/* ─── Stars row ──────────────────────────────────────────────── */
+function Stars({ completed }: { completed: boolean }) {
+  return (
+    <div className="flex gap-0.5 justify-center mt-1">
+      {[0, 1, 2].map(i => <IconStar key={i} filled={completed} size={13} />)}
+    </div>
+  )
+}
+
+/* ─── Bottom Nav ─────────────────────────────────────────────── */
 function BottomNav({ tenantSlug }: { tenantSlug: string }) {
   const pathname = usePathname()
-
   const tabs = [
-    { label: "Inicio",   icon: "🏠", href: `/${tenantSlug}/home` },
-    { label: "Ranking",  icon: "🏆", href: `/${tenantSlug}/ranking` },
-    { label: "Logros",   icon: "🎖", href: `/${tenantSlug}/achievements` },
-    { label: "Perfil",   icon: "👤", href: `/${tenantSlug}/profile` },
+    { label: "Inicio",   Icon: IconHome,   href: `/${tenantSlug}/home` },
+    { label: "Ranking",  Icon: IconTrophy,  href: `/${tenantSlug}/ranking` },
+    { label: "Logros",   Icon: IconShield,  href: `/${tenantSlug}/achievements` },
+    { label: "Perfil",   Icon: IconUser,    href: `/${tenantSlug}/profile` },
   ]
-
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50"
-      style={{ background: "#ffffff", borderTop: "1px solid #e2e8f0", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      style={{ background: "#ffffff", borderTop: "2px solid #f1f5f9", paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {tabs.map((tab) => {
           const active = pathname === tab.href
           return (
             <Link key={tab.href} href={tab.href}
-              className="flex flex-col items-center gap-0.5 py-3 px-5 transition-all"
-              style={{ color: active ? "#7c3aed" : "#94a3b8" }}>
-              <span className="text-xl leading-none">{tab.icon}</span>
-              <span className="text-[10px] font-semibold mt-0.5">{tab.label}</span>
-              {active && <div className="w-1 h-1 rounded-full mt-0.5" style={{ background: "#7c3aed" }} />}
+              className="flex flex-col items-center gap-1 py-3 px-5">
+              <tab.Icon active={active} />
+              <span className="text-[10px] font-bold"
+                style={{ color: active ? "#7c3aed" : "#94a3b8" }}>
+                {tab.label}
+              </span>
+              {active && (
+                <div className="w-5 h-0.5 rounded-full" style={{ background: "#7c3aed" }} />
+              )}
             </Link>
           )
         })}
@@ -67,235 +141,285 @@ function BottomNav({ tenantSlug }: { tenantSlug: string }) {
   )
 }
 
-/* ─── Lesson node ────────────────────────────────────────── */
-function LessonNode({ lesson, tenantSlug, icon }: { lesson: Lesson; tenantSlug: string; icon: string }) {
-  const size = 64
+/* ─── Module banner ──────────────────────────────────────────── */
+const BANNER_GRADIENTS = [
+  ["#7c3aed", "#6d28d9"],
+  ["#0891b2", "#0e7490"],
+  ["#059669", "#047857"],
+  ["#d97706", "#b45309"],
+  ["#e11d48", "#be123c"],
+  ["#2563eb", "#1d4ed8"],
+  ["#7c3aed", "#9333ea"],
+  ["#0d9488", "#0f766e"],
+  ["#dc2626", "#b91c1c"],
+]
+
+function ModuleBanner({ module, colorIdx }: { module: Module; colorIdx: number }) {
+  const [from, to] = BANNER_GRADIENTS[colorIdx % BANNER_GRADIENTS.length]
+  const completed = module.lessons.every(l => l.completed)
+  const started = module.lessons.some(l => l.completed)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: colorIdx * 0.04 }}
+      className="mx-4 mb-8 rounded-2xl overflow-hidden"
+      style={{ boxShadow: `0 6px 20px ${from}40` }}>
+      <div style={{ background: `linear-gradient(135deg, ${from}, ${to})`, padding: "14px 18px" }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>
+              Módulo {module.order}
+            </p>
+            <p style={{ color: "#ffffff", fontSize: 15, fontWeight: 800, lineHeight: 1.3, maxWidth: 220 }}>
+              {module.title}
+            </p>
+          </div>
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: "rgba(255,255,255,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            {completed
+              ? <IconCheck size={22} color="white" />
+              : started
+                ? <IconBook size={20} color="white" />
+                : <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M4 6h16M4 12h10M4 18h7" /></svg>
+            }
+          </div>
+        </div>
+        {/* Mini progress bar */}
+        <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.25)" }}>
+          <div className="h-full rounded-full" style={{
+            width: `${module.lessons.length === 0 ? 0 : Math.round(module.lessons.filter(l => l.completed).length / module.lessons.length * 100)}%`,
+            background: "rgba(255,255,255,0.9)",
+          }} />
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Lesson node ────────────────────────────────────────────── */
+function LessonNode({ lesson, tenantSlug, colorIdx }: { lesson: Lesson; tenantSlug: string; colorIdx: number }) {
+  const [from] = BANNER_GRADIENTS[colorIdx % BANNER_GRADIENTS.length]
+  const size = 72
 
   if (lesson.completed) {
     return (
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center">
         <div style={{
           width: size, height: size, borderRadius: "50%",
-          background: "#22c55e",
+          background: "linear-gradient(135deg, #4ade80, #22c55e)",
+          boxShadow: "0 6px 20px rgba(34,197,94,0.4), 0 2px 0 #15803d",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 12px rgba(34,197,94,0.3)",
         }}>
-          <span style={{ fontSize: 28, color: "#ffffff" }}>✓</span>
+          <IconCheck size={32} color="white" />
         </div>
-        <span className="text-[10px] font-medium text-center leading-tight max-w-[80px]"
-          style={{ color: "#94a3b8" }}>
+        <Stars completed={true} />
+        <p className="text-[10px] font-semibold text-center mt-1.5 leading-tight" style={{ color: "#64748b", maxWidth: 80 }}>
           {lesson.title}
-        </span>
+        </p>
       </div>
     )
   }
 
   if (lesson.isCurrent) {
     return (
-      <div className="flex flex-col items-center gap-2">
-        {/* Pulsing ring */}
-        <div className="relative" style={{ width: size + 16, height: size + 16 }}>
+      <div className="flex flex-col items-center gap-1.5">
+        {/* START label */}
+        <div className="px-4 py-1 rounded-full text-xs font-black" style={{ background: from, color: "white", letterSpacing: "0.08em" }}>
+          INICIAR
+        </div>
+        {/* Pulsing node */}
+        <div className="relative" style={{ width: size + 20, height: size + 20 }}>
           <motion.div
-            animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.1, 0.4] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.18, 1], opacity: [0.35, 0.08, 0.35] }}
+            transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
             style={{
               position: "absolute", inset: 0, borderRadius: "50%",
-              background: "#7c3aed", opacity: 0.3,
+              background: from,
             }}
           />
           <Link href={`/${tenantSlug}/lesson/${lesson.id}`}
             style={{
-              position: "absolute", inset: 8, borderRadius: "50%",
-              background: "#7c3aed",
+              position: "absolute", inset: 10, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${from}, ${BANNER_GRADIENTS[colorIdx % BANNER_GRADIENTS.length][1]})`,
+              boxShadow: `0 6px 20px ${from}60, 0 3px 0 ${BANNER_GRADIENTS[colorIdx % BANNER_GRADIENTS.length][1]}`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(124,58,237,0.45)",
               textDecoration: "none",
             }}>
-            <span style={{ fontSize: 26 }}>{icon}</span>
+            <IconPlay size={26} color="white" />
           </Link>
         </div>
-        <span className="text-[11px] font-semibold text-center leading-tight max-w-[90px]"
-          style={{ color: "#7c3aed" }}>
+        <Stars completed={false} />
+        <p className="text-[11px] font-bold text-center leading-tight" style={{ color: from, maxWidth: 90 }}>
           {lesson.title}
-        </span>
-        <Link href={`/${tenantSlug}/lesson/${lesson.id}`}
-          className="px-5 py-2 rounded-full text-xs font-bold text-white shadow-md transition-all active:scale-95"
-          style={{ background: "#7c3aed", boxShadow: "0 4px 12px rgba(124,58,237,0.4)" }}>
-          COMENZAR
-        </Link>
+        </p>
       </div>
     )
   }
 
   // Locked
   return (
-    <div className="flex flex-col items-center gap-2" style={{ opacity: 0.5 }}>
+    <div className="flex flex-col items-center" style={{ opacity: 0.55 }}>
       <div style={{
         width: size, height: size, borderRadius: "50%",
-        background: "#e2e8f0", border: "3px solid #cbd5e1",
+        background: "#e2e8f0",
+        border: "4px solid #cbd5e1",
+        boxShadow: "0 2px 0 #94a3b8",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <span style={{ fontSize: 22 }}>🔒</span>
+        <IconLock size={28} color="#94a3b8" />
       </div>
-      <span className="text-[10px] font-medium text-center leading-tight max-w-[80px]"
-        style={{ color: "#94a3b8" }}>
+      <Stars completed={false} />
+      <p className="text-[10px] font-medium text-center mt-1.5 leading-tight" style={{ color: "#94a3b8", maxWidth: 80 }}>
         {lesson.title}
-      </span>
+      </p>
     </div>
   )
 }
 
-/* ─── Main component ─────────────────────────────────────── */
+/* ─── Connector ──────────────────────────────────────────────── */
+function Connector({ completed }: { completed: boolean }) {
+  return (
+    <div style={{ width: 4, height: 36, borderRadius: 4, margin: "2px 0",
+      background: completed ? "linear-gradient(#22c55e, #4ade80)" : "#e2e8f0" }} />
+  )
+}
+
+/* ─── Main ───────────────────────────────────────────────────── */
 export default function StudentHome({ tenantSlug, student, streak, modules, courseName, progressPct }: Props) {
   const firstName = student.name.split(" ")[0]
   const totalLessons = modules.reduce((a, m) => a + m.lessons.length, 0)
-  const completedLessons = modules.reduce((a, m) => a + m.lessons.filter((l) => l.completed).length, 0)
-
-  // Flat list of all lessons for icon assignment
-  let globalLessonIndex = 0
+  const completedLessons = modules.reduce((a, m) => a + m.lessons.filter(l => l.completed).length, 0)
 
   return (
-    <div className="min-h-screen" style={{ background: "#f8fafc" }}>
+    <div style={{ minHeight: "100dvh", background: "#f8fafc" }}>
 
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-40 px-4"
-        style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0", paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="flex items-center justify-between py-3 max-w-lg mx-auto">
+      <div className="sticky top-0 z-40"
+        style={{ background: "#ffffff", borderBottom: "2px solid #f1f5f9", paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
           {/* Brand */}
           <div className="flex items-center gap-2">
             <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png"
-              width={28} height={28} alt="" style={{ borderRadius: "50%" }} />
+              width={30} height={30} alt="" style={{ borderRadius: "50%" }} />
             <div className="leading-none">
-              <span className="text-xs font-bold" style={{ color: "#0f172a" }}>Candidatic </span>
-              <span className="text-xs font-bold" style={{ color: "#7c3aed" }}>Knowledge</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>Candidatic </span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#7c3aed" }}>Knowledge</span>
             </div>
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full"
-              style={{ background: "#fff7ed", border: "1.5px solid #fed7aa" }}>
-              <span className="text-sm leading-none">🔥</span>
-              <span className="text-xs font-bold" style={{ color: "#ea580c" }}>{streak.currentDays}</span>
+            {/* Streak */}
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-2xl"
+              style={{ background: "#fff7ed", border: "2px solid #FED7AA" }}>
+              <IconFlame size={18} color="#FF9600" />
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#EA580C" }}>{streak.currentDays}</span>
             </div>
-            <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full"
-              style={{ background: "#faf5ff", border: "1.5px solid #ddd6fe" }}>
-              <span className="text-sm leading-none">⚡</span>
-              <span className="text-xs font-bold" style={{ color: "#7c3aed" }}>{student.xpTotal}</span>
+            {/* XP */}
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-2xl"
+              style={{ background: "#faf5ff", border: "2px solid #ddd6fe" }}>
+              <IconGem size={16} color="#7c3aed" />
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#7c3aed" }}>{student.xpTotal}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Scrollable content ── */}
-      <div className="pb-28 max-w-lg mx-auto">
+      {/* ── Content ── */}
+      <div style={{ paddingBottom: 110, maxWidth: 440, margin: "0 auto" }}>
 
         {/* Course header */}
         {courseName && (
-          <div className="px-4 pt-5 pb-3">
-            <p className="text-xs font-semibold mb-1" style={{ color: "#94a3b8" }}>
-              Hola, {firstName} 👋
+          <div className="px-4 pt-5 pb-4">
+            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginBottom: 2 }}>
+              Hola, {firstName}
             </p>
-            <h1 className="text-base font-bold" style={{ color: "#0f172a" }}>{courseName}</h1>
-            {/* Overall progress bar */}
-            <div className="mt-2.5">
-              <div className="flex justify-between text-[10px] font-medium mb-1" style={{ color: "#94a3b8" }}>
-                <span>{completedLessons} de {totalLessons} lecciones</span>
-                <span style={{ color: "#7c3aed" }}>{progressPct}%</span>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+            <h1 style={{ fontSize: 18, fontWeight: 900, color: "#0f172a", marginBottom: 12, lineHeight: 1.2 }}>
+              {courseName}
+            </h1>
+            {/* Progress */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  initial={{ width: 0 }} animate={{ width: `${progressPct}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
                   className="h-full rounded-full"
                   style={{ background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
                 />
               </div>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#7c3aed", flexShrink: 0 }}>
+                {completedLessons}/{totalLessons}
+              </span>
             </div>
           </div>
         )}
 
         {/* ── Learning path ── */}
         {modules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-3">
-            <span className="text-5xl">📚</span>
-            <p className="font-bold text-base" style={{ color: "#0f172a" }}>Sin cursos asignados</p>
-            <p className="text-sm" style={{ color: "#94a3b8" }}>
-              Tu instructor te asignará un curso pronto
-            </p>
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconBook size={40} color="#94a3b8" />
+            </div>
+            <p style={{ fontWeight: 800, fontSize: 16, color: "#0f172a" }}>Sin cursos asignados</p>
+            <p style={{ fontSize: 14, color: "#94a3b8" }}>Tu instructor te asignará un curso pronto</p>
           </div>
         ) : (
-          <div className="px-4 pt-2">
-            {modules.map((module, mIdx) => {
-              const color = MODULE_COLORS[mIdx % MODULE_COLORS.length]
-              return (
-                <div key={module.id} className="mb-4">
-                  {/* Module banner */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: mIdx * 0.05 }}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl mb-6 mx-auto max-w-xs"
-                    style={{ background: color }}>
-                    <span className="text-white text-sm font-bold opacity-80">Módulo {module.order}</span>
-                    <span className="text-white text-sm font-bold flex-1 text-center">{module.title}</span>
-                  </motion.div>
+          <>
+            {modules.map((module, mIdx) => (
+              <div key={module.id}>
+                <ModuleBanner module={module} colorIdx={mIdx} />
 
-                  {/* Lesson nodes zig-zag */}
-                  <div className="flex flex-col items-center">
-                    {module.lessons.map((lesson, lIdx) => {
-                      const icon = NODE_ICONS[globalLessonIndex % NODE_ICONS.length]
-                      globalLessonIndex++
-                      const isLeft = lIdx % 2 === 0
+                {/* Nodes */}
+                <div className="flex flex-col items-center px-4 mb-10">
+                  {module.lessons.map((lesson, lIdx) => {
+                    const isLeft = lIdx % 2 === 0
+                    const offset = "22%"
+                    return (
+                      <div key={lesson.id} className="flex flex-col items-center w-full">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.75 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: mIdx * 0.04 + lIdx * 0.07, type: "spring", stiffness: 200 }}
+                          style={{
+                            alignSelf: isLeft ? "flex-start" : "flex-end",
+                            marginLeft: isLeft ? offset : undefined,
+                            marginRight: !isLeft ? offset : undefined,
+                          }}>
+                          <LessonNode lesson={lesson} tenantSlug={tenantSlug} colorIdx={mIdx} />
+                        </motion.div>
 
-                      return (
-                        <div key={lesson.id} className="flex flex-col items-center w-full">
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: mIdx * 0.05 + lIdx * 0.06 }}
-                            style={{
-                              alignSelf: isLeft ? "flex-start" : "flex-end",
-                              marginLeft: isLeft ? "10%" : undefined,
-                              marginRight: !isLeft ? "10%" : undefined,
-                            }}>
-                            <LessonNode lesson={lesson} tenantSlug={tenantSlug} icon={icon} />
-                          </motion.div>
-
-                          {/* Connector line */}
-                          {lIdx < module.lessons.length - 1 && (
-                            <div style={{
-                              width: 3, height: 40,
-                              background: "linear-gradient(#e2e8f0, #e2e8f0)",
-                              borderRadius: 2,
-                              margin: "4px 0",
-                            }} />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Spacer between modules */}
-                  {mIdx < modules.length - 1 && <div className="h-8" />}
+                        {lIdx < module.lessons.length - 1 && (
+                          <Connector completed={lesson.completed} />
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+              </div>
+            ))}
 
-            {/* All done banner */}
+            {/* All done */}
             {completedLessons === totalLessons && totalLessons > 0 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mt-4 rounded-3xl p-6 text-center"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
-                <div className="text-4xl mb-2">🎉</div>
-                <p className="text-white font-bold text-lg">¡Curso completado!</p>
-                <p className="text-purple-200 text-sm mt-1">Eres increíble, {firstName}</p>
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                className="mx-4 mt-2 rounded-3xl p-6 text-center"
+                style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)", boxShadow: "0 8px 30px rgba(124,58,237,0.4)" }}>
+                <div className="flex justify-center gap-1 mb-3">
+                  {[0,1,2].map(i => <IconStar key={i} filled size={28} />)}
+                </div>
+                <p style={{ color: "#ffffff", fontWeight: 900, fontSize: 20, marginBottom: 4 }}>
+                  ¡Curso completado!
+                </p>
+                <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 14 }}>
+                  Eres increíble, {firstName}
+                </p>
               </motion.div>
             )}
-          </div>
+          </>
         )}
       </div>
 
