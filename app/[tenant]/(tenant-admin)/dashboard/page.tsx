@@ -1,30 +1,95 @@
+import { prisma } from "@/lib/prisma"
+import { notFound } from "next/navigation"
 import TenantAdminDashboard from "@/features/tenant-admin/components/TenantAdminDashboard"
 
-export default function TenantDashboardPage({ params }: { params: { tenant: string } }) {
-  const mockData = {
-    tenant: { name: "ACME Corp", slug: params.tenant, maxStudents: 50 },
-    stats: { activeStudents: 3, avgProgress: 66, atRisk: 1, nearExpiry: 0 },
-    students: [
-      {
-        id: "s1", name: "María Torres", email: "maria@acme.com",
-        course: "Fundamentos de Ventas B2B", progress: 100,
-        lastAccess: "Hoy", streakDays: 12, status: "ACTIVE" as const,
-        subscriptionDaysLeft: 28,
-      },
-      {
-        id: "s2", name: "Ana García", email: "ana@acme.com",
-        course: "Fundamentos de Ventas B2B", progress: 66,
-        lastAccess: "Hoy", streakDays: 5, status: "ACTIVE" as const,
-        subscriptionDaysLeft: 15,
-      },
-      {
-        id: "s3", name: "Carlos López", email: "carlos@acme.com",
-        course: "Fundamentos de Ventas B2B", progress: 33,
-        lastAccess: "Hace 3 días", streakDays: 0, status: "INACTIVE" as const,
-        subscriptionDaysLeft: 5,
-      },
-    ],
-  }
+export const dynamic = "force-dynamic"
 
-  return <TenantAdminDashboard data={mockData} />
+export default async function TenantDashboardPage({ params }: { params: Promise<{ tenant: string }> }) {
+  const { tenant: slug } = await params
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug },
+    include: {
+      users: {
+        where: { role: "STUDENT" },
+        include: {
+          enrollments: {
+            include: { course: { select: { title: true } } },
+            orderBy: { lastActivityAt: "desc" },
+          },
+          streak: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  })
+
+  if (!tenant) notFound()
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const threeDaysAgo = new Date(today.getTime() - 3 * 86400000)
+  const sevenDaysFromNow = new Date(Date.now() + 7 * 86400000)
+
+  const students = tenant.users.map((u) => {
+    const primaryEnrollment = u.enrollments[0]
+    const allProgress = u.enrollments.map((e) => e.progressPct)
+    const avgProgress = allProgress.length
+      ? Math.round(allProgress.reduce((a, b) => a + b, 0) / allProgress.length)
+      : 0
+
+    const lastActivity = u.enrollments
+      .map((e) => e.lastActivityAt)
+      .filter(Boolean)
+      .sort((a, b) => b!.getTime() - a!.getTime())[0]
+
+    const lastAccess = lastActivity
+      ? lastActivity >= today
+        ? "Hoy"
+        : lastActivity >= new Date(today.getTime() - 86400000)
+          ? "Ayer"
+          : `Hace ${Math.floor((today.getTime() - lastActivity.getTime()) / 86400000)} días`
+      : "Nunca"
+
+    const subDays = u.subscriptionExpiresAt
+      ? Math.floor((u.subscriptionExpiresAt.getTime() - Date.now()) / 86400000)
+      : null
+
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      status: u.status as "ACTIVE" | "INACTIVE" | "EXPIRED" | "SUSPENDED",
+      courseName: primaryEnrollment?.course.title ?? null,
+      courseCount: u.enrollments.length,
+      progress: avgProgress,
+      lastAccess,
+      lastActivityAt: lastActivity?.toISOString() ?? null,
+      streakDays: u.streak?.currentDays ?? 0,
+      subscriptionDaysLeft: subDays,
+      subscriptionExpiresAt: u.subscriptionExpiresAt?.toISOString().split("T")[0] ?? null,
+    }
+  })
+
+  const activeStudents = students.filter((s) => s.status === "ACTIVE").length
+  const avgProgress = students.length
+    ? Math.round(students.reduce((a, s) => a + s.progress, 0) / students.length)
+    : 0
+  const atRisk = students.filter(
+    (s) => !s.lastActivityAt || new Date(s.lastActivityAt) < threeDaysAgo
+  ).length
+  const nearExpiry = students.filter(
+    (s) => s.subscriptionExpiresAt && new Date(s.subscriptionExpiresAt) <= sevenDaysFromNow
+  ).length
+
+  return (
+    <TenantAdminDashboard
+      tenantSlug={slug}
+      data={{
+        tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents },
+        stats: { activeStudents, avgProgress, atRisk, nearExpiry },
+        students,
+      }}
+    />
+  )
 }
