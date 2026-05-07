@@ -99,3 +99,119 @@ export async function deleteCourse(courseId: string) {
   ])
   revalidatePath("/admin/courses")
 }
+
+// ── Course editor actions ────────────────────────────────────────────────────
+
+export async function updateCourseAction(courseId: string, data: { title: string; description?: string }) {
+  await prisma.course.update({
+    where: { id: courseId },
+    data: { title: data.title.trim(), description: data.description?.trim() ?? null },
+  })
+  revalidatePath(`/admin/courses/${courseId}`)
+  revalidatePath("/admin/courses")
+}
+
+export async function updateModuleAction(moduleId: string, data: { title: string }) {
+  const mod = await prisma.module.update({
+    where: { id: moduleId },
+    data: { title: data.title.trim() },
+    select: { courseId: true },
+  })
+  revalidatePath(`/admin/courses/${mod.courseId}`)
+}
+
+export async function updateLessonAction(
+  lessonId: string,
+  data: { title: string; contentType: "TEXT" | "QUIZ" | "TEXT_AND_QUIZ"; contentJson: Record<string, unknown>; xpReward: number }
+) {
+  await prisma.lesson.update({
+    where: { id: lessonId },
+    data: {
+      title: data.title.trim(),
+      contentType: data.contentType,
+      contentJson: data.contentJson as Parameters<typeof prisma.lesson.update>[0]["data"]["contentJson"],
+      xpReward: data.xpReward,
+    },
+  })
+  const mod = await prisma.lesson.findUnique({ where: { id: lessonId }, include: { module: { select: { courseId: true } } } })
+  revalidatePath(`/admin/courses/${mod?.module.courseId ?? ""}`)
+}
+
+export async function addLessonAction(moduleId: string) {
+  const mod = await prisma.module.findUnique({
+    where: { id: moduleId },
+    include: { _count: { select: { lessons: true } } },
+  })
+  if (!mod) return null
+  const lesson = await prisma.lesson.create({
+    data: {
+      moduleId,
+      title: "Nueva lección",
+      order: mod._count.lessons + 1,
+      contentType: "TEXT",
+      contentJson: { blocks: [{ type: "paragraph", text: "Escribe aquí el contenido de la lección..." }] },
+      xpReward: 10,
+    },
+  })
+  revalidatePath(`/admin/courses/${mod.courseId}`)
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    order: lesson.order,
+    contentType: lesson.contentType as "TEXT" | "QUIZ" | "TEXT_AND_QUIZ",
+    contentJson: lesson.contentJson as Record<string, unknown>,
+    xpReward: lesson.xpReward,
+  }
+}
+
+export async function deleteLessonAction(lessonId: string) {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: { module: { select: { courseId: true } } },
+  })
+  if (!lesson) return
+  await prisma.lesson.delete({ where: { id: lessonId } })
+  revalidatePath(`/admin/courses/${lesson.module.courseId}`)
+}
+
+export async function addModuleAction(courseId: string) {
+  const count = await prisma.module.count({ where: { courseId } })
+  const mod = await prisma.module.create({
+    data: {
+      courseId,
+      title: "Nuevo módulo",
+      order: count + 1,
+      lessons: {
+        create: [{
+          title: "Nueva lección",
+          order: 1,
+          contentType: "TEXT",
+          contentJson: { blocks: [{ type: "paragraph", text: "Escribe aquí el contenido de la lección..." }] },
+          xpReward: 10,
+        }],
+      },
+    },
+    include: { lessons: true },
+  })
+  revalidatePath(`/admin/courses/${courseId}`)
+  return {
+    id: mod.id,
+    title: mod.title,
+    order: mod.order,
+    lessons: mod.lessons.map((l) => ({
+      id: l.id,
+      title: l.title,
+      order: l.order,
+      contentType: l.contentType as "TEXT" | "QUIZ" | "TEXT_AND_QUIZ",
+      contentJson: l.contentJson as Record<string, unknown>,
+      xpReward: l.xpReward,
+    })),
+  }
+}
+
+export async function deleteModuleAction(moduleId: string) {
+  const mod = await prisma.module.findUnique({ where: { id: moduleId }, select: { courseId: true } })
+  if (!mod) return
+  await prisma.module.delete({ where: { id: moduleId } })
+  revalidatePath(`/admin/courses/${mod.courseId}`)
+}
