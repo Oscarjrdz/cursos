@@ -423,12 +423,6 @@ export default function AlumnoPage() {
   const [screen, setScreen] = useState<Screen>("splash")
   const [studentName, setStudentName] = useState("")
 
-  const slideVariants = {
-    enter:  { x: "100%", opacity: 0 },
-    center: { x: 0,       opacity: 1 },
-    exit:   { x: "-40%",  opacity: 0 },
-  }
-
   const content: Record<Screen, React.ReactNode> = {
     splash:   <SplashScreen onNext={() => setScreen("login")} />,
     login:    <LoginScreen slug={slug} onSuccess={(name) => { setStudentName(name); setScreen("onboard1") }} />,
@@ -437,16 +431,14 @@ export default function AlumnoPage() {
   }
 
   return (
-    /* fixed container clips slide animation without hiding content */
     <div style={{ position: "fixed", inset: 0, overflowX: "hidden" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={screen}
-          variants={slideVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ type: "tween", duration: 0.28, ease: [0.32, 0, 0.67, 0] }}
+          initial={screen === "splash" ? false : { x: "60%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "-30%", opacity: 0 }}
+          transition={{ type: "tween", duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
           style={{ position: "absolute", inset: 0, overflowY: "auto" }}
         >
           {content[screen]}

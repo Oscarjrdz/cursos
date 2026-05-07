@@ -160,9 +160,9 @@ function ModuleBanner({ module, colorIdx }: { module: Module; colorIdx: number }
   const started = module.lessons.some(l => l.completed)
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: colorIdx * 0.04 }}
+      transition={{ delay: Math.min(colorIdx * 0.04, 0.2), duration: 0.3, ease: "easeOut" }}
       className="mx-4 mb-8 rounded-2xl overflow-hidden"
       style={{ boxShadow: `0 6px 20px ${from}40` }}>
       <div style={{ background: `linear-gradient(135deg, ${from}, ${to})`, padding: "14px 18px" }}>
@@ -381,9 +381,9 @@ export default function StudentHome({ tenantSlug, student, streak, modules, cour
                     return (
                       <div key={lesson.id} className="flex flex-col items-center w-full">
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.75 }}
+                          initial={{ opacity: 0, scale: 0.92 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: mIdx * 0.04 + lIdx * 0.07, type: "spring", stiffness: 200 }}
+                          transition={{ delay: Math.min(mIdx * 0.03 + lIdx * 0.05, 0.4), duration: 0.3, ease: "easeOut" }}
                           style={{
                             alignSelf: isLeft ? "flex-start" : "flex-end",
                             marginLeft: isLeft ? offset : undefined,

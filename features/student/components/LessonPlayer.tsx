@@ -230,7 +230,7 @@ function QuizSlide({ item, quizIdx, quizTotal, selected, onSelect, quizState, li
             <motion.button key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07, type: "spring", stiffness: 300 }}
+              transition={{ delay: i * 0.05, duration: 0.25, ease: "easeOut" }}
               whileTap={quizState === "idle" ? { scale: 0.97 } : {}}
               onClick={() => quizState === "idle" && onSelect(i)}
               className="w-full text-left px-4 py-4 rounded-2xl text-sm font-semibold flex items-center gap-3 transition-all"
@@ -303,7 +303,7 @@ function FeedbackBanner({ state, onContinue, isLast, combo }: {
     <AnimatePresence>
       <motion.div
         initial={{ y: 120 }} animate={{ y: 0 }} exit={{ y: 120 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        transition={{ type: "spring", stiffness: 300, damping: 28 }}
         className="px-5 pt-4 pb-5"
         style={{ background: correct ? "#f0fdf4" : "#fef2f2", borderTop: `2.5px solid ${correct ? "#22c55e" : "#ef4444"}` }}>
         <div className="max-w-lg mx-auto">
@@ -369,9 +369,9 @@ function CelebrationScreen({ xpReward, tenantSlug, score, total, onRestart }: {
       <motion.img
         src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png"
         width={110} height={110} alt=""
-        initial={{ scale: 0, rotate: -20 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.1 }}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
       />
 
       {/* Title */}
@@ -558,7 +558,7 @@ export default function LessonPlayer({ tenantSlug, userId, lesson, lessonIndex, 
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+          transition={{ type: "tween", duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
           className="flex-1 flex flex-col overflow-hidden">
 
           {currentStep.type === "content" && (

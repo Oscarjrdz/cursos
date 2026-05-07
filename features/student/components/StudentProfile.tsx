@@ -117,9 +117,9 @@ function StatCard({ icon, value, label, gradient, delay }: {
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, type: "spring", stiffness: 200 }}
+      transition={{ delay, duration: 0.35, ease: "easeOut" }}
       style={{
         background: "#ffffff",
         borderRadius: 20,
@@ -231,9 +231,9 @@ export default function StudentProfile({ tenantSlug, student, streak, stats, ach
 
         {/* ─── Profile Header Card ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 200 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="mx-4 mt-5"
           style={{
             background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%)",
@@ -358,9 +358,9 @@ export default function StudentProfile({ tenantSlug, student, streak, stats, ach
 
         {/* ─── Progress Overview ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.15, duration: 0.35, ease: "easeOut" }}
           className="mx-4 mt-5"
           style={{
             background: "#ffffff",
@@ -380,7 +380,7 @@ export default function StudentProfile({ tenantSlug, student, streak, stats, ach
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${stats.progressPct}%` }}
-              transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
               style={{
                 height: "100%", borderRadius: 10,
                 background: "linear-gradient(90deg, #7c3aed, #a855f7, #c084fc)",
@@ -405,7 +405,7 @@ export default function StudentProfile({ tenantSlug, student, streak, stats, ach
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
               style={{
                 background: "#ffffff",
                 borderRadius: 20,
@@ -427,9 +427,9 @@ export default function StudentProfile({ tenantSlug, student, streak, stats, ach
               {achievements.map((ach, i) => (
                 <motion.div
                   key={ach.id}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.06 }}
+                  transition={{ delay: Math.min(0.2 + i * 0.04, 0.5), duration: 0.3, ease: "easeOut" }}
                   style={{
                     background: "#ffffff",
                     borderRadius: 16,
