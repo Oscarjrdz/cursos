@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { updateTenant, assignCourse, unassignCourse } from "@/features/super-admin/actions"
+import { updateTenant, assignCourse, unassignCourse, setTenantCredentials } from "@/features/super-admin/actions"
 
 type Course = {
   id: string
@@ -18,6 +18,7 @@ type Tenant = {
   maxStudents: number
   status: string
   expiresAt: string
+  adminPhone: string | null
   assignedCourseIds: string[]
 }
 
@@ -37,6 +38,10 @@ export default function TenantEditPage({ tenant, courses }: { tenant: Tenant; co
   const [error, setError] = useState("")
   const [assigned, setAssigned] = useState<Set<string>>(new Set(tenant.assignedCourseIds))
   const [toggling, setToggling] = useState<string | null>(null)
+  const [creds, setCreds] = useState({ phone: tenant.adminPhone ?? "", password: "" })
+  const [savingCreds, setSavingCreds] = useState(false)
+  const [savedCreds, setSavedCreds] = useState(false)
+  const [credsError, setCredsError] = useState("")
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -147,6 +152,62 @@ export default function TenantEditPage({ tenant, courses }: { tenant: Tenant; co
               className="px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-60"
               style={{ background: "#7c3aed" }}>
               {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Credentials */}
+      <div className="rounded-2xl p-6 mb-6" style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div className="mb-5">
+          <p className="font-semibold text-sm" style={{ color: "#0f172a" }}>Acceso del administrador</p>
+          <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
+            Credenciales para que el cliente acceda a su dashboard en{" "}
+            <span className="font-medium" style={{ color: "#7c3aed" }}>/{tenant.slug}/login</span>
+          </p>
+        </div>
+        <form onSubmit={async (e) => {
+          e.preventDefault()
+          if (!creds.phone.trim() || !creds.password.trim()) { setCredsError("Teléfono y contraseña son requeridos"); return }
+          setSavingCreds(true); setCredsError(""); setSavedCreds(false)
+          try {
+            await setTenantCredentials(tenant.id, { phone: creds.phone.trim(), password: creds.password })
+            setSavedCreds(true)
+            setCreds((c) => ({ ...c, password: "" }))
+            setTimeout(() => setSavedCreds(false), 2500)
+          } catch (err: unknown) {
+            setCredsError(err instanceof Error ? err.message : "Error al guardar")
+          } finally { setSavingCreds(false) }
+        }} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium" style={{ color: "#475569" }}>Teléfono</label>
+              <input value={creds.phone} onChange={(e) => setCreds((c) => ({ ...c, phone: e.target.value }))}
+                placeholder="8116038195" className={inputClass} style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
+                onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium" style={{ color: "#475569" }}>
+                Contraseña {tenant.adminPhone && <span style={{ color: "#16a34a" }}>(ya configurada)</span>}
+              </label>
+              <input type="password" value={creds.password}
+                onChange={(e) => setCreds((c) => ({ ...c, password: e.target.value }))}
+                placeholder={tenant.adminPhone ? "Nueva contraseña" : "Establecer contraseña"}
+                className={inputClass} style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
+                onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")} />
+            </div>
+          </div>
+          {credsError && <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "#fef2f2", color: "#dc2626" }}>{credsError}</p>}
+          <div className="flex items-center justify-between pt-1">
+            {savedCreds ? (
+              <span className="text-xs font-medium" style={{ color: "#16a34a" }}>✓ Credenciales guardadas</span>
+            ) : <span />}
+            <button type="submit" disabled={savingCreds}
+              className="px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-60"
+              style={{ background: "#7c3aed" }}>
+              {savingCreds ? "Guardando..." : "Guardar credenciales"}
             </button>
           </div>
         </form>

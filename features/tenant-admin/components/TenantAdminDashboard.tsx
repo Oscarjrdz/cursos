@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { createStudent } from "@/features/tenant-admin/actions"
 
 type Student = {
@@ -133,6 +134,13 @@ function StatCard({ icon, label, value, sub, accent }: {
 export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
   const { tenant, stats, students } = data
   const [showCreate, setShowCreate] = useState(false)
+  const router = useRouter()
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" })
+    router.push(`/${tenantSlug}/login`)
+    router.refresh()
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "#f1f5f9" }}>
@@ -153,11 +161,11 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
                 <span style={{ color: "#94a3b8" }}>/{tenant.maxStudents}</span>
               </p>
             </div>
-            <Link href="/admin/dashboard"
+            <button onClick={handleLogout}
               className="text-xs px-4 py-2 rounded-xl font-medium transition-all hover:bg-slate-100"
               style={{ background: "#f1f5f9", color: "#475569" }}>
               ← Salir
-            </Link>
+            </button>
           </div>
         </div>
       </div>

@@ -30,6 +30,7 @@ export default async function EditClientePage({ params }: { params: Promise<{ id
         maxStudents: tenant.maxStudents,
         status: tenant.status,
         expiresAt: tenant.expiresAt?.toISOString().split("T")[0] ?? "",
+        adminPhone: tenant.adminPhone ?? null,
         assignedCourseIds: tenant.tenantCourses.map((tc) => tc.courseId),
       }}
       courses={allCourses.map((c) => ({

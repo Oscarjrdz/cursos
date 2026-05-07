@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma migrate deploy && prisma generate && next build",
     "migrate": "prisma migrate deploy",
     "postinstall": "prisma generate",
     "start": "next start",
@@ -21,6 +21,7 @@
     "@prisma/client": "^7.8.0",
     "@vercel/blob": "^2.3.3",
     "framer-motion": "^12.38.0",
+    "jose": "^6.2.3",
     "next": "16.2.4",
     "openai": "^6.36.0",
     "pdf-parse": "^1.1.1",

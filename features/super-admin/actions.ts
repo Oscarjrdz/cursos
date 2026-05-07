@@ -62,3 +62,17 @@ export async function unassignCourse(tenantId: string, courseId: string) {
   })
   revalidatePath(`/admin/clientes/${tenantId}`)
 }
+
+export async function setTenantCredentials(
+  tenantId: string,
+  data: { phone: string; password: string }
+) {
+  const crypto = await import("crypto")
+  const hashedPassword = crypto.createHash("sha256").update(data.password + "lf_salt").digest("hex")
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { adminPhone: data.phone, adminPassword: hashedPassword },
+  })
+  revalidatePath(`/admin/clientes/${tenantId}`)
+}
