@@ -842,7 +842,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Build course with new modules and lessons
-  const moduleData = MODULES.map((mod, modIdx) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const moduleData: any[] = MODULES.map((mod, modIdx) => ({
     title: mod.title,
     order: modIdx + 1,
     lessons: {
@@ -853,9 +854,7 @@ export async function POST(request: NextRequest) {
         xpReward: lesson.xpReward,
         contentJson: {
           blocks: [{ type: "paragraph", text: lesson.content }],
-          ...(lesson.contentType === "TEXT_AND_QUIZ" && "quiz" in lesson
-            ? { quiz: (lesson as { quiz: unknown }).quiz }
-            : {}),
+          ...("quiz" in lesson && lesson.quiz ? { quiz: lesson.quiz } : {}),
         },
       })),
     },
