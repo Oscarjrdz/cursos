@@ -13,12 +13,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Fetch ALL lessons — TEXT ones will be upgraded to TEXT_AND_QUIZ
   const lessons = await prisma.lesson.findMany({
-    where: { contentType: "TEXT_AND_QUIZ" },
-    select: { id: true, title: true, contentJson: true },
+    select: { id: true, title: true, contentType: true, contentJson: true },
   })
 
-  // Process lessons missing the quiz array (including those with old single-question format)
   const missing = lessons.filter((l) => {
     const cj = l.contentJson as Record<string, unknown>
     return !Array.isArray(cj.quiz) || (cj.quiz as unknown[]).length < 5
@@ -90,10 +89,10 @@ Reglas:
       await prisma.lesson.update({
         where: { id: lesson.id },
         data: {
+          contentType: "TEXT_AND_QUIZ",
           contentJson: {
             ...cj,
             quiz: parsed.quiz,
-            // Remove old single-question fields if present
             question: undefined,
             options: undefined,
             correctIndex: undefined,
