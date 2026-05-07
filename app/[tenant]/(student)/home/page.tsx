@@ -1,25 +1,74 @@
+import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/session"
+import { notFound, redirect } from "next/navigation"
 import StudentHome from "@/features/student/components/StudentHome"
 
-export default function StudentHomePage() {
-  const mockData = {
-    student: { name: "Ana García", avatarUrl: null, xpTotal: 30 },
-    streak: { currentDays: 5, shields: 1 },
-    enrollment: {
-      course: { title: "Fundamentos de Ventas B2B" },
-      progressPct: 66,
-      nextLesson: { id: "lesson-003", title: "Identificando al decisor" },
-    },
-    leaderboard: [
-      { rank: 1, name: "María Torres", xpTotal: 40, isCurrentUser: false },
-      { rank: 2, name: "Ana García", xpTotal: 30, isCurrentUser: true },
-      { rank: 3, name: "Carlos López", xpTotal: 10, isCurrentUser: false },
-    ],
-    achievements: [
-      { id: "ach-001", title: "Primera lección", earned: true },
-      { id: "ach-002", title: "Racha de fuego", earned: false },
-      { id: "ach-003", title: "Curso completado", earned: false },
-    ],
-  }
+export const dynamic = "force-dynamic"
 
-  return <StudentHome data={mockData} tenantSlug="acme" />
+export default async function StudentHomePage({ params }: { params: Promise<{ tenant: string }> }) {
+  const { tenant: slug } = await params
+  const session = await getSession()
+
+  if (!session?.userId) redirect(`/${slug}/login`)
+
+  const userId = session.userId
+
+  const tenant = await prisma.tenant.findUnique({ where: { slug } })
+  if (!tenant) notFound()
+
+  const [user, enrollment, streak] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.enrollment.findFirst({
+      where: { userId },
+      include: {
+        course: {
+          include: {
+            modules: {
+              orderBy: { order: "asc" },
+              include: {
+                lessons: {
+                  orderBy: { order: "asc" },
+                  select: { id: true, title: true, order: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.streak.findUnique({ where: { userId } }),
+  ])
+
+  if (!user) redirect(`/${slug}/login`)
+
+  const completions = await prisma.lessonCompletion.findMany({
+    where: { userId },
+    select: { lessonId: true },
+  })
+  const completedIds = new Set(completions.map((c) => c.lessonId))
+
+  let foundCurrent = false
+  const modules =
+    enrollment?.course.modules.map((m) => ({
+      id: m.id,
+      title: m.title,
+      order: m.order,
+      lessons: m.lessons.map((l) => {
+        const completed = completedIds.has(l.id)
+        const isCurrent = !completed && !foundCurrent
+        if (isCurrent) foundCurrent = true
+        return { id: l.id, title: l.title, order: l.order, completed, isCurrent }
+      }),
+    })) ?? []
+
+  return (
+    <StudentHome
+      tenantSlug={slug}
+      student={{ name: user.name, xpTotal: enrollment?.xpTotal ?? 0 }}
+      streak={{ currentDays: streak?.currentDays ?? 0 }}
+      modules={modules}
+      courseName={enrollment?.course.title ?? null}
+      progressPct={enrollment?.progressPct ?? 0}
+    />
+  )
 }

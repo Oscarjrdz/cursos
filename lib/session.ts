@@ -3,9 +3,10 @@ import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 
 export type SessionPayload = {
-  role: "SUPER_ADMIN" | "TENANT_ADMIN"
+  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "STUDENT"
   tenantId?: string
   tenantSlug?: string
+  userId?: string
 }
 
 const COOKIE_NAME = "lf_session"

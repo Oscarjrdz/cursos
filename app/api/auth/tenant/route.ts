@@ -7,22 +7,54 @@ export async function POST(req: NextRequest) {
   const { phone, password, slug } = await req.json()
 
   const tenant = await prisma.tenant.findUnique({ where: { slug } })
+  if (!tenant) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
 
-  if (!tenant?.adminPhone || !tenant?.adminPassword) {
-    return NextResponse.json({ error: "Este cliente no tiene credenciales configuradas" }, { status: 401 })
+  const hashed = hashPassword(password)
+
+  // Try tenant admin first
+  if (tenant.adminPhone && tenant.adminPassword) {
+    if (tenant.adminPhone === phone && tenant.adminPassword === hashed) {
+      const token = await createSession({
+        role: "TENANT_ADMIN",
+        tenantId: tenant.id,
+        tenantSlug: tenant.slug,
+      })
+      const res = NextResponse.json({ ok: true, role: "TENANT_ADMIN" })
+      res.cookies.set("lf_session", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      })
+      return res
+    }
   }
 
-  if (tenant.adminPhone !== phone || tenant.adminPassword !== hashPassword(password)) {
+  // Try student login
+  const student = await prisma.user.findFirst({
+    where: {
+      tenantId: tenant.id,
+      phone,
+      password: hashed,
+      role: "STUDENT",
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  })
+
+  if (!student) {
     return NextResponse.json({ error: "Teléfono o contraseña incorrectos" }, { status: 401 })
   }
 
   const token = await createSession({
-    role: "TENANT_ADMIN",
+    role: "STUDENT",
     tenantId: tenant.id,
     tenantSlug: tenant.slug,
+    userId: student.id,
   })
 
-  const res = NextResponse.json({ ok: true })
+  const res = NextResponse.json({ ok: true, role: "STUDENT" })
   res.cookies.set("lf_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

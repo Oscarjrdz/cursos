@@ -26,7 +26,7 @@ export default function TenantLoginPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-      router.push(`/${slug}/dashboard`)
+      router.push(data.role === "STUDENT" ? `/${slug}/home` : `/${slug}/dashboard`)
       router.refresh()
     } catch {
       setError("Error de conexión")
