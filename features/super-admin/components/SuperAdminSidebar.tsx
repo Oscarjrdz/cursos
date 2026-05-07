@@ -53,19 +53,13 @@ export default function SuperAdminSidebar() {
       }}
     >
       {/* Logo */}
-      <div className="px-6 py-6" style={{ borderBottom: "1px solid #e2e8f0" }}>
+      <div className="px-6 py-5" style={{ borderBottom: "1px solid #e2e8f0" }}>
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "#7c3aed" }}
-          >
-            <svg width="16" height="16" fill="white" viewBox="0 0 24 24">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" alt="Mascota" width={36} height={36} />
           <div>
-            <p className="font-bold text-sm" style={{ color: "#0f172a" }}>LearnFlow</p>
-            <p className="text-xs" style={{ color: "#94a3b8" }}>Super Admin</p>
+            <p className="font-bold text-sm leading-tight" style={{ color: "#0f172a" }}>Candidatic</p>
+            <p className="font-bold text-sm leading-tight" style={{ color: "#7c3aed" }}>Knowledge</p>
           </div>
         </div>
       </div>
