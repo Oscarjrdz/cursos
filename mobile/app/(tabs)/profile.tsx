@@ -238,7 +238,13 @@ export default function ProfileScreen() {
       if (!res.ok) {
         const errBody = await res.text()
         console.error("Avatar upload failed:", res.status, errBody)
-        throw new Error("Error al subir la imagen")
+        // Show the actual server error for debugging
+        let detail = "Error al subir la imagen"
+        try {
+          const parsed = JSON.parse(errBody)
+          detail = parsed.detail || parsed.error || detail
+        } catch { /* not JSON */ }
+        throw new Error(`${res.status}: ${detail}`)
       }
       const { avatarUrl } = await res.json()
       setData(prev => prev ? { ...prev, avatarUrl } : prev)
