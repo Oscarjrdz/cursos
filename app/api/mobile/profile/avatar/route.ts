@@ -11,10 +11,14 @@ export async function POST(req: NextRequest) {
   const file = form.get("avatar") as File | null
   if (!file) return NextResponse.json({ error: "No se recibió imagen" }, { status: 400 })
 
+  const allowed = ["image/jpeg", "image/png", "image/webp"]
+  if (!allowed.includes(file.type)) {
+    return NextResponse.json({ error: "Tipo de imagen no permitido" }, { status: 400 })
+  }
+
   const ext = file.name.split(".").pop() ?? "jpg"
   const blob = await put(`avatars/${session.userId}.${ext}`, file, {
     access: "public",
-    allowedContentTypes: ["image/jpeg", "image/png", "image/webp"],
   })
 
   await prisma.user.update({
