@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as ImagePicker from "expo-image-picker"
+import * as FileSystem from "expo-file-system"
 import Svg, { Path, Circle, Rect, Defs, LinearGradient, Stop } from "react-native-svg"
 import { useAuth } from "../../lib/auth"
 import { apiRequest, getApiBase } from "../../lib/api"
@@ -202,7 +203,7 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.7,
     })
     if (result.canceled) return
 
@@ -210,25 +211,21 @@ export default function ProfileScreen() {
     setUploading(true)
     try {
       const base = getApiBase()
-      const uri = Platform.OS === "android" ? asset.uri : asset.uri.replace("file://", "")
-      const filename = asset.fileName ?? `avatar_${Date.now()}.jpg`
-      const mimeType = asset.mimeType ?? "image/jpeg"
 
-      const form = new FormData()
-      // @ts-expect-error — React Native's FormData expects { uri, name, type }
-      form.append("avatar", {
-        uri: asset.uri,
-        name: filename,
-        type: mimeType,
+      // Read the image file as base64
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
       })
+
+      const mimeType = asset.mimeType ?? "image/jpeg"
 
       const res = await fetch(`${base}/api/mobile/profile/avatar`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // NOTE: Do NOT set Content-Type — fetch will auto-set multipart/form-data with boundary
+          "Content-Type": "application/json",
         },
-        body: form,
+        body: JSON.stringify({ base64, mimeType }),
       })
 
       if (!res.ok) {
