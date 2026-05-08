@@ -7,16 +7,26 @@ export async function POST(req: NextRequest) {
   const session = await getMobileSession(req)
   if (!session?.userId) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const form = await req.formData()
-  const file = form.get("avatar") as File | null
-  if (!file) return NextResponse.json({ error: "No se recibió imagen" }, { status: 400 })
+  let form: FormData
+  try {
+    form = await req.formData()
+  } catch {
+    return NextResponse.json({ error: "No se pudo leer el formulario" }, { status: 400 })
+  }
 
-  const allowed = ["image/jpeg", "image/png", "image/webp"]
-  if (!allowed.includes(file.type)) {
+  const file = form.get("avatar")
+  if (!file || !(file instanceof Blob)) {
+    return NextResponse.json({ error: "No se recibió imagen" }, { status: 400 })
+  }
+
+  // Derive extension — RN may send "avatar.jpg" or just "image.jpg"
+  const fileName = (file as File).name ?? "avatar.jpg"
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "jpg"
+  const allowedExts = ["jpg", "jpeg", "png", "webp"]
+  if (!allowedExts.includes(ext)) {
     return NextResponse.json({ error: "Tipo de imagen no permitido" }, { status: 400 })
   }
 
-  const ext = file.name.split(".").pop() ?? "jpg"
   const blob = await put(`avatars/${session.userId}.${ext}`, file, {
     access: "public",
   })
@@ -28,3 +38,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ avatarUrl: blob.url })
 }
+
