@@ -31,7 +31,11 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        { "photosPermission": "Necesitamos acceso a tus fotos para cambiar tu foto de perfil." }
+      ]
     ],
     "updates": {
       "url": "https://u.expo.dev/13045748-db7d-4107-bf74-d8f3817ff58e"

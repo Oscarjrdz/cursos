@@ -1,6 +1,6 @@
 import Constants from "expo-constants"
 
-function getApiBase(): string {
+export function getApiBase(): string {
   const envUrl = process.env.EXPO_PUBLIC_API_URL
   if (envUrl) return envUrl
   if (__DEV__) {

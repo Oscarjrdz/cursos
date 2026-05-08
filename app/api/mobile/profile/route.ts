@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const userId = session.userId
 
   const [user, enrollment, streak, completedCount, achievements] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, avatarUrl: true } }),
     prisma.enrollment.findFirst({ where: { userId }, select: { xpTotal: true, progressPct: true } }),
     prisma.streak.findUnique({ where: { userId }, select: { currentDays: true, longestDays: true } }),
     prisma.lessonCompletion.count({ where: { userId } }),
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     name: user?.name ?? "",
     email: user?.email ?? "",
+    avatarUrl: user?.avatarUrl ?? null,
     xpTotal: enrollment?.xpTotal ?? 0,
     progressPct: enrollment?.progressPct ?? 0,
     streak: { currentDays: streak?.currentDays ?? 0, longestDays: streak?.longestDays ?? 0 },
