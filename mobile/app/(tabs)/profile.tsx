@@ -214,7 +214,7 @@ export default function ProfileScreen() {
 
       // Read the image file as base64
       const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: "base64",
       })
 
       const mimeType = asset.mimeType ?? "image/jpeg"
