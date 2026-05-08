@@ -14,7 +14,6 @@ import {
 import { useRouter } from "expo-router"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import * as ImagePicker from "expo-image-picker"
-import * as FileSystem from "expo-file-system"
 import Svg, { Path, Circle, Rect, Defs, LinearGradient, Stop } from "react-native-svg"
 import { useAuth } from "../../lib/auth"
 import { apiRequest, getApiBase } from "../../lib/api"
@@ -204,18 +203,20 @@ export default function ProfileScreen() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.2,
+      base64: true,
     })
     if (result.canceled) return
 
     const asset = result.assets[0]
+    const base64 = asset.base64
+    if (!base64) {
+      Alert.alert("Error", "No se pudo leer la imagen")
+      return
+    }
+
     setUploading(true)
     try {
       const base = getApiBase()
-
-      // Read the image file as base64
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: "base64",
-      })
 
       // Check size — Vercel limit is ~4.5MB, base64 adds ~33% overhead
       const sizeInBytes = base64.length * 0.75
