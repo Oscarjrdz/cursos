@@ -39,10 +39,12 @@ function FloatingCat({ uri, size = 64 }: { uri: string; size?: number }) {
     return () => y.stopAnimation()
   }, [y])
   return (
-    <Animated.Image
-      source={{ uri }}
-      style={{ width: size, height: size, borderRadius: size / 2, transform: [{ translateY: y }] }}
-    />
+    <Animated.View style={{ transform: [{ translateY: y }] }}>
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      />
+    </Animated.View>
   )
 }
 
