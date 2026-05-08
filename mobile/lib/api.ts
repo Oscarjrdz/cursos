@@ -9,7 +9,7 @@ function getApiBase(): string {
     const ip = hostUri.split(":")[0]
     return `http://${ip}:3000`
   }
-  return ""
+  return "https://knowledgeapp-six.vercel.app"
 }
 
 export async function apiRequest<T>(
