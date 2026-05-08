@@ -32,6 +32,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/13045748-db7d-4107-bf74-d8f3817ff58e"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "13045748-db7d-4107-bf74-d8f3817ff58e"
+      }
+    },
+    "owner": "oscarjrdz"
   }
 }
