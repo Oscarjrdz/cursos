@@ -203,7 +203,7 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.2,
     })
     if (result.canceled) return
 
@@ -216,6 +216,12 @@ export default function ProfileScreen() {
       const base64 = await FileSystem.readAsStringAsync(asset.uri, {
         encoding: "base64",
       })
+
+      // Check size — Vercel limit is ~4.5MB, base64 adds ~33% overhead
+      const sizeInBytes = base64.length * 0.75
+      if (sizeInBytes > 3_000_000) {
+        throw new Error("La imagen es muy grande. Intenta con una foto más pequeña.")
+      }
 
       const mimeType = asset.mimeType ?? "image/jpeg"
 
