@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://knowledge.candidatic.com"),
   title: "Candidatic Knowledge | Revoluciona tu aprendizaje",
   description: "La plataforma inteligente de capacitación y evaluación diseñada para potenciar el talento de tu empresa.",
   openGraph: {
