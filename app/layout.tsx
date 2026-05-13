@@ -13,8 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Candidatic Knowledge",
-  description: "Plataforma de aprendizaje",
+  title: "Candidatic Knowledge | Revoluciona tu aprendizaje",
+  description: "La plataforma inteligente de capacitación y evaluación diseñada para potenciar el talento de tu empresa.",
+  openGraph: {
+    title: "Candidatic Knowledge | Revoluciona tu aprendizaje",
+    description: "La plataforma inteligente de capacitación y evaluación diseñada para potenciar el talento de tu empresa.",
+    url: "https://knowledge.candidatic.com",
+    siteName: "Candidatic Knowledge",
+    locale: "es_MX",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Candidatic Knowledge | Revoluciona tu aprendizaje",
+    description: "La plataforma inteligente de capacitación y evaluación diseñada para potenciar el talento de tu empresa.",
+  },
 };
 
 export const viewport = {
