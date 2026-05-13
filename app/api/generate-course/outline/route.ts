@@ -6,23 +6,38 @@ export const maxDuration = 60
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el documento adjunto y extraer TODOS los temas/módulos principales que se podrían convertir en un curso.
+const SYSTEM_PROMPT = `Eres un experto en diseño instruccional. Tu tarea es analizar el documento adjunto y extraer TODOS los temas y subtemas que contiene.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
 {
   "title": "Título sugerido para el curso completo",
   "description": "Descripción breve del curso (2-3 oraciones)",
-  "modules": [
-    { "title": "Nombre del módulo/tema 1", "summary": "Breve resumen de qué cubre (1 oración)" },
-    { "title": "Nombre del módulo/tema 2", "summary": "Breve resumen de qué cubre (1 oración)" }
+  "themes": [
+    {
+      "title": "TEMA 1. Nombre del tema principal",
+      "subtopics": [
+        "Subtema 1: Descripción breve",
+        "Subtema 2: Descripción breve",
+        "Subtema 3: Descripción breve",
+        "Subtema 4: Descripción breve",
+        "Subtema 5: Descripción breve"
+      ]
+    },
+    {
+      "title": "TEMA 2. Nombre del segundo tema",
+      "subtopics": [
+        "Subtema 1: Descripción breve",
+        "Subtema 2: Descripción breve"
+      ]
+    }
   ]
 }
 
 Reglas:
 - Cubre el 100% del contenido del documento
-- Si el documento tiene módulos/capítulos/secciones explícitas, úsalos como módulos
-- Cada módulo debe representar un tema lo suficientemente amplio para generar 5 lecturas y 5 evaluaciones
-- No hay límite de módulos: crea tantos como requiera el contenido
+- Extrae TODOS los temas principales (capítulos, módulos, secciones)
+- Dentro de cada tema, extrae TODOS los subtemas (puntos, lecciones, apartados)
+- Cada subtema se convertirá en un módulo con 5 lecturas y 5 evaluaciones, así que asegúrate de que cada subtema tiene suficiente contenido
 - Responde en el mismo idioma del documento
 - Solo devuelve JSON válido, sin texto adicional`
 
@@ -55,7 +70,7 @@ export async function POST(request: NextRequest) {
             } as any,
             {
               type: "input_text",
-              text: "Extrae la lista de todos los temas/módulos de este documento. Responde solo con JSON válido.",
+              text: "Extrae TODOS los temas y sus subtemas de este documento. Responde solo con JSON válido.",
             },
           ],
         },
@@ -68,8 +83,8 @@ export async function POST(request: NextRequest) {
 
     const outline = JSON.parse(raw)
 
-    if (!outline.title || !Array.isArray(outline.modules) || outline.modules.length === 0) {
-      throw new Error("No se pudieron extraer los módulos del documento")
+    if (!outline.title || !Array.isArray(outline.themes) || outline.themes.length === 0) {
+      throw new Error("No se pudieron extraer los temas del documento")
     }
 
     return NextResponse.json({ ok: true, outline })

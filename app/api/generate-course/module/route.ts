@@ -6,28 +6,28 @@ export const maxDuration = 120
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const SYSTEM_PROMPT = `Eres un experto en diseño instruccional de nivel avanzado. Tu tarea es generar el contenido COMPLETO para UN SOLO módulo de un curso, basándote en el documento adjunto.
+const SYSTEM_PROMPT = `Eres un experto en diseño instruccional de nivel avanzado. Tu tarea es generar el contenido COMPLETO para UN SOLO subtema de un curso, basándote en el documento adjunto.
 
 Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
 {
-  "title": "Título del módulo",
+  "title": "Título del subtema (será un módulo en la app)",
   "lessons": [
     {
-      "title": "Título de la lección de lectura",
+      "title": "Lectura 1: Título descriptivo",
       "contentType": "TEXT",
-      "content": "Contenido educativo detallado de la lección (3-5 párrafos con profundidad técnica, información práctica y ejemplos)",
-      "xpReward": 10
+      "content": "Contenido educativo detallado (3-5 párrafos con profundidad, ejemplos prácticos y casos reales)",
+      "xpReward": 15
     },
     {
-      "title": "Título de la evaluación",
+      "title": "Evaluación 1: Título descriptivo",
       "contentType": "TEXT_AND_QUIZ",
-      "content": "Breve resumen/repaso del tema evaluado (1-2 párrafos)",
+      "content": "Breve resumen/repaso del subtema evaluado (1-2 párrafos)",
       "quiz": [
         {
           "question": "¿Pregunta de nivel experto?",
           "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
           "correctIndex": 0,
-          "explanation": "Explicación técnica detallada de por qué esa respuesta es la correcta"
+          "explanation": "Explicación detallada de por qué esa respuesta es correcta"
         }
       ],
       "xpReward": 25
@@ -36,45 +36,44 @@ Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
 }
 
 Reglas CRÍTICAS:
-- Genera EXACTAMENTE 10 lecciones para este módulo, alternando:
-  1. Lectura 1 (TEXT) — 15 XP
-  2. Evaluación 1 (TEXT_AND_QUIZ con 5 preguntas) — 25 XP
-  3. Lectura 2 (TEXT) — 15 XP
-  4. Evaluación 2 (TEXT_AND_QUIZ con 5 preguntas) — 25 XP
-  5. Lectura 3 (TEXT) — 15 XP
-  6. Evaluación 3 (TEXT_AND_QUIZ con 5 preguntas) — 25 XP
-  7. Lectura 4 (TEXT) — 15 XP
-  8. Evaluación 4 (TEXT_AND_QUIZ con 5 preguntas) — 25 XP
-  9. Lectura 5 (TEXT) — 15 XP
-  10. Evaluación 5 (TEXT_AND_QUIZ con 5 preguntas) — 30 XP (evaluación final del módulo)
-- Cada lección TEXT debe tener contenido detallado de 3-5 párrafos
-- Cada lección TEXT_AND_QUIZ debe tener exactamente 5 preguntas en el campo "quiz"
-- Las preguntas deben ser de NIVEL EXPERTO: evalúan aplicación, análisis y juicio crítico
-- Cada pregunta tiene exactamente 4 opciones; correctIndex es el índice (0-3) de la correcta
-- Los distractores deben ser plausibles y técnicamente relacionados
+- Genera EXACTAMENTE 10 lecciones, alternando lectura y evaluación:
+  1. Lectura 1 (TEXT, 15 XP)
+  2. Evaluación 1 (TEXT_AND_QUIZ con 5 preguntas, 25 XP)
+  3. Lectura 2 (TEXT, 15 XP)
+  4. Evaluación 2 (TEXT_AND_QUIZ con 5 preguntas, 25 XP)
+  5. Lectura 3 (TEXT, 15 XP)
+  6. Evaluación 3 (TEXT_AND_QUIZ con 5 preguntas, 25 XP)
+  7. Lectura 4 (TEXT, 15 XP)
+  8. Evaluación 4 (TEXT_AND_QUIZ con 5 preguntas, 25 XP)
+  9. Lectura 5 (TEXT, 15 XP)
+  10. Evaluación Final (TEXT_AND_QUIZ con 5 preguntas, 30 XP)
+- Cada TEXT: contenido detallado de 3-5 párrafos, información práctica y ejemplos
+- Cada TEXT_AND_QUIZ: exactamente 5 preguntas de nivel experto con 4 opciones
+- correctIndex es el índice (0-3) de la respuesta correcta
+- Distractores plausibles y técnicamente relacionados
 - Responde en el mismo idioma del documento
-- Solo genera contenido relacionado al módulo solicitado, NO de otros módulos`
+- Solo genera contenido del subtema solicitado`
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get("pdf") as File | null
-    const moduleTitle = formData.get("moduleTitle") as string | null
-    const moduleIndex = formData.get("moduleIndex") as string | null
-    const allModules = formData.get("allModules") as string | null
+    const subtopic = formData.get("subtopic") as string | null
+    const themeTitle = formData.get("themeTitle") as string | null
+    const context = formData.get("context") as string | null
 
     if (!file || file.type !== "application/pdf") {
       return NextResponse.json({ error: "Se requiere un archivo PDF" }, { status: 400 })
     }
 
-    if (!moduleTitle) {
-      return NextResponse.json({ error: "Se requiere el título del módulo" }, { status: 400 })
+    if (!subtopic) {
+      return NextResponse.json({ error: "Se requiere el subtema" }, { status: 400 })
     }
 
     const base64 = Buffer.from(await file.arrayBuffer()).toString("base64")
 
-    const contextMsg = allModules
-      ? `\n\nContexto: El curso completo tiene estos módulos: ${allModules}.\nTú solo debes generar el contenido del módulo ${moduleIndex ?? ""}: "${moduleTitle}".`
+    const contextMsg = themeTitle
+      ? `\n\nContexto: Este subtema pertenece al tema "${themeTitle}".${context ? `\nEstructura completa del curso: ${context}` : ""}`
       : ""
 
     const response = await openai.responses.create({
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
             } as any,
             {
               type: "input_text",
-              text: `Genera el contenido completo SOLO para el módulo: "${moduleTitle}".${contextMsg}\n\nDebe tener exactamente 5 lecturas y 5 evaluaciones (10 lecciones en total, alternadas). Responde únicamente con JSON válido.`,
+              text: `Genera el contenido completo SOLO para el subtema: "${subtopic}".${contextMsg}\n\n5 lecturas + 5 evaluaciones = 10 lecciones alternadas. JSON válido.`,
             },
           ],
         },
@@ -105,7 +104,7 @@ export async function POST(request: NextRequest) {
     const moduleData = JSON.parse(raw)
 
     if (!moduleData.title || !Array.isArray(moduleData.lessons) || moduleData.lessons.length === 0) {
-      throw new Error("La IA devolvió una estructura inválida para este módulo")
+      throw new Error("La IA devolvió una estructura inválida para este subtema")
     }
 
     return NextResponse.json({ ok: true, module: moduleData })
