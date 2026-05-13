@@ -13,20 +13,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://knowledgeapp-six.vercel.app"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
-      "android": {
-        "serviceAccountKeyPath": "",
-        "track": "production"
+        "EXPO_PUBLIC_API_URL": "https://knowledge.candidatic.com"
       }
     }
   }
