@@ -83,7 +83,6 @@ function BottomNav({ tenantSlug }: { tenantSlug: string }) {
   const tabs = [
     { label: "Inicio",   Icon: IconHome,   href: `/${tenantSlug}/home` },
     { label: "Ranking",  Icon: IconTrophy,  href: `/${tenantSlug}/ranking` },
-    { label: "Logros",   Icon: IconShield,  href: `/${tenantSlug}/achievements` },
     { label: "Perfil",   Icon: IconUser,    href: `/${tenantSlug}/profile` },
   ]
   return (
