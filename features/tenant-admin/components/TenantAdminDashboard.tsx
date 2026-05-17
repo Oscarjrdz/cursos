@@ -498,84 +498,84 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
               <button onClick={() => setShowCreate(true)} className="mt-1 px-5 py-2.5 rounded-xl text-sm font-medium text-white hover:opacity-90" style={{ background: "#7c3aed" }}>+ Crear primer alumno</button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #f1f5f9", background: "#fafafa" }}>
-                    {["Alumno", "Curso", "Progreso", "Último acceso", "Racha", "Suscripción", "Estado", ""].map(h => (
-                      <th key={h} className="text-left px-5 py-3 text-xs font-medium" style={{ color: "#94a3b8" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student, i) => {
-                    const st = STATUS[student.status] ?? STATUS.INACTIVE
-                    const subDays = student.subscriptionDaysLeft
-                    return (
-                      <motion.tr key={student.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                        className="hover:bg-slate-50 transition-colors"
-                        style={{ borderBottom: i < students.length - 1 ? "1px solid #f1f5f9" : "none" }}>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "#7c3aed" }}>
-                              {student.name.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium" style={{ color: "#0f172a" }}>{student.name}</p>
-                              <p className="text-xs" style={{ color: "#94a3b8" }}>{student.email}</p>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={10} height={10} alt="" />
-                                <span className="text-xs" style={{ color: "#a78bfa" }}>Candidatic Knowledge</span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="text-sm truncate max-w-[140px]" style={{ color: "#475569" }}>{student.courseName ?? <span style={{ color: "#94a3b8" }}>Sin curso</span>}</p>
-                          {student.courseCount > 1 && <p className="text-xs" style={{ color: "#94a3b8" }}>+{student.courseCount - 1} más</p>}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
-                              <div className="h-full rounded-full" style={{ width: `${student.progress}%`, background: student.progress === 100 ? "#16a34a" : "#7c3aed" }} />
-                            </div>
-                            <span className="text-sm font-medium" style={{ color: "#0f172a" }}>{student.progress}%</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-sm" style={{ color: "#94a3b8" }}>{student.lastAccess}</td>
-                        <td className="px-5 py-4 text-sm font-medium" style={{ color: "#0f172a" }}>
-                          {student.streakDays > 0 ? `🔥 ${student.streakDays}` : <span style={{ color: "#94a3b8" }}>—</span>}
-                        </td>
-                        <td className="px-5 py-4">
-                          {subDays === null
-                            ? <span className="text-xs" style={{ color: "#94a3b8" }}>Sin límite</span>
-                            : <span className="text-sm font-medium" style={{ color: subDays <= 0 ? "#dc2626" : subDays <= 7 ? "#d97706" : "#0f172a" }}>
-                                {subDays <= 0 ? "Expirada" : `${subDays}d`}
-                              </span>
-                          }
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => setEditing(student)}
-                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
-                              style={{ background: "#f1f5f9", color: "#475569" }}>
-                              Editar
-                            </button>
-                            <button onClick={() => setResetting(student)}
-                              className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all hover:opacity-90"
-                              style={{ background: "#fff7ed", color: "#f59e0b", border: "1px solid #fed7aa" }}>
-                              Reset
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="flex flex-col">
+              {students.map((student, i) => {
+                const st = STATUS[student.status] ?? STATUS.INACTIVE
+                const subDays = student.subscriptionDaysLeft
+                return (
+                  <motion.div key={student.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
+                    className="px-6 py-4 transition-colors hover:bg-slate-50"
+                    style={{ borderBottom: i < students.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+
+                    {/* Row 1: Avatar + Name + Status badge + Action buttons */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "#7c3aed" }}>
+                        {student.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold truncate" style={{ color: "#0f172a" }}>{student.name}</p>
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                        </div>
+                        <p className="text-xs truncate" style={{ color: "#94a3b8" }}>{student.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button onClick={() => setEditing(student)}
+                          className="text-xs px-3.5 py-2 rounded-xl font-semibold transition-all hover:opacity-90"
+                          style={{ background: "#7c3aed", color: "#ffffff" }}>
+                          ✏️ Editar
+                        </button>
+                        <button onClick={() => setResetting(student)}
+                          className="text-xs px-3 py-2 rounded-xl font-semibold transition-all hover:opacity-90"
+                          style={{ background: "#fff7ed", color: "#f59e0b", border: "1px solid #fed7aa" }}>
+                          🔄
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Stats pills */}
+                    <div className="flex items-center gap-3 mt-3 ml-[52px] flex-wrap">
+                      {/* Course */}
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <span className="text-xs" style={{ color: "#94a3b8" }}>📚</span>
+                        <span className="text-xs font-medium truncate" style={{ color: "#475569", maxWidth: 120 }}>
+                          {student.courseName ?? "Sin curso"}
+                        </span>
+                        {student.courseCount > 1 && <span className="text-xs" style={{ color: "#94a3b8" }}>+{student.courseCount - 1}</span>}
+                      </div>
+
+                      {/* Progress */}
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <div className="w-14 h-1.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
+                          <div className="h-full rounded-full" style={{ width: `${student.progress}%`, background: student.progress === 100 ? "#16a34a" : "#7c3aed" }} />
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: "#0f172a" }}>{student.progress}%</span>
+                      </div>
+
+                      {/* Streak */}
+                      {student.streakDays > 0 && (
+                        <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg" style={{ background: "#fff7ed", border: "1px solid #fed7aa" }}>
+                          <span className="text-xs font-semibold" style={{ color: "#f59e0b" }}>🔥 {student.streakDays}d</span>
+                        </div>
+                      )}
+
+                      {/* Subscription */}
+                      <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                        <span className="text-xs" style={{ color: "#94a3b8" }}>⏰</span>
+                        {subDays === null
+                          ? <span className="text-xs" style={{ color: "#94a3b8" }}>Sin límite</span>
+                          : <span className="text-xs font-semibold" style={{ color: subDays <= 0 ? "#dc2626" : subDays <= 7 ? "#d97706" : "#475569" }}>
+                              {subDays <= 0 ? "Expirada" : `${subDays}d restantes`}
+                            </span>
+                        }
+                      </div>
+
+                      {/* Last access */}
+                      <span className="text-xs" style={{ color: "#cbd5e1" }}>Último: {student.lastAccess}</span>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           )}
         </motion.div>

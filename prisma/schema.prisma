@@ -262,6 +262,42 @@ model LeaderboardEntry {
 }
 
 // ---------------------------------------------------------------------------
+// RANKING SOCIAL — REACTIONS
+// ---------------------------------------------------------------------------
+
+model RankingReaction {
+  id         String   @id @default(cuid())
+  tenantId   String
+  fromUserId String
+  toUserId   String
+  type       String   // "like"|"love"|"fire"|"gem"|"brain"|"lightning"|"crown"|"bullseye"
+  createdAt  DateTime @default(now())
+
+  @@unique([tenantId, fromUserId, toUserId, type])
+  @@index([tenantId, toUserId])
+  @@map("ranking_reactions")
+}
+
+// ---------------------------------------------------------------------------
+// RANKING SOCIAL — COMMENTS (with threaded replies)
+// ---------------------------------------------------------------------------
+
+model RankingComment {
+  id         String   @id @default(cuid())
+  tenantId   String
+  fromUserId String
+  fromName   String
+  toUserId   String
+  parentId   String?
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, toUserId])
+  @@index([parentId])
+  @@map("ranking_comments")
+}
+
+// ---------------------------------------------------------------------------
 // AI — registro de jobs de generación de cursos desde PDF
 // ---------------------------------------------------------------------------
 

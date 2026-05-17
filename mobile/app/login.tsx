@@ -4,10 +4,7 @@ import {
   Animated,
   Easing,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -90,13 +87,12 @@ function Field({
   onSubmitEditing?: () => void
   inputRef?: React.RefObject<TextInput | null>
 }) {
-  const [focused, setFocused] = useState(false)
   const [show, setShow] = useState(false)
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={[styles.fieldBox, focused && styles.fieldBoxFocused]}>
-        <Ionicons name={icon} size={20} color={focused ? "#7c3aed" : "#cbd5e1"} style={{ width: 22 }} />
+      <View style={styles.fieldBox}>
+        <Ionicons name={icon} size={20} color="#a78bfa" style={{ width: 22 }} />
         <TextInput
           ref={inputRef}
           style={styles.fieldInput}
@@ -110,8 +106,6 @@ function Field({
           autoCorrect={false}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
         />
         {secureTextEntry && (
           <Pressable onPress={() => setShow(s => !s)} hitSlop={8}>
@@ -179,64 +173,59 @@ function LoginFormScreen({ onSuccess }: { onSuccess: (name: string) => void }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View style={styles.loginRoot}>
       <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.loginScroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Bubble + cat */}
-        <View style={styles.loginHero}>
-          <Bubble>
-            <Text style={styles.bubbleText}>¡Hola! Ingresa tus accesos</Text>
-          </Bubble>
-          <View style={{ marginTop: 4 }}>
-            <FloatingCat uri={CAT2} size={72} />
-          </View>
-        </View>
 
-        {/* Form card */}
-        <View style={styles.card}>
-          <Field
-            label="TELÉFONO"
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Tu número"
-            icon="phone-portrait-outline"
-            keyboardType="phone-pad"
-            returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-          />
-          <Field
-            label="CONTRASEÑA"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Tu contraseña"
-            icon="lock-closed-outline"
-            secureTextEntry
-            returnKeyType="done"
-            onSubmitEditing={handleLogin}
-            inputRef={passwordRef}
-          />
-          {error && (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle-outline" size={15} color="#dc2626" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-          <PurpleBtn
-            label="ENTRAR"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={!phone || !password}
+      {/* Bubble + cat */}
+      <View style={styles.loginHero}>
+        <Bubble>
+          <Text style={styles.bubbleText}>¡Hola! Ingresa tus accesos</Text>
+        </Bubble>
+        <View style={{ marginTop: 4 }}>
+          <Image
+            source={{ uri: CAT2 }}
+            style={{ width: 72, height: 72, borderRadius: 36 }}
           />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+
+      {/* Form card */}
+      <View style={styles.card}>
+        <Field
+          label="TELÉFONO"
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="Tu número"
+          icon="phone-portrait-outline"
+          keyboardType="phone-pad"
+          returnKeyType="next"
+          onSubmitEditing={() => passwordRef.current?.focus()}
+        />
+        <Field
+          label="CONTRASEÑA"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Tu contraseña"
+          icon="lock-closed-outline"
+          secureTextEntry
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+          inputRef={passwordRef}
+        />
+        {error && (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle-outline" size={15} color="#dc2626" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+        <PurpleBtn
+          label="ENTRAR"
+          onPress={handleLogin}
+          loading={loading}
+          disabled={!phone || !password}
+        />
+      </View>
+    </View>
   )
 }
 
@@ -386,12 +375,12 @@ const styles = StyleSheet.create({
   },
 
   /* login form screen */
-  loginScroll: {
-    flexGrow: 1,
+  loginRoot: {
+    flex: 1,
+    backgroundColor: "#faf5ff",
     paddingTop: 56,
     paddingBottom: 40,
     paddingHorizontal: 24,
-    backgroundColor: "#faf5ff",
   },
   loginHero: { alignItems: "center", marginBottom: 28 },
 
@@ -405,7 +394,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 32,
-    elevation: 8,
   },
 
   /* field */
@@ -416,11 +404,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: "#e2e8f0",
     borderRadius: 14, backgroundColor: "#fafafa",
     paddingHorizontal: 14, paddingVertical: 14,
-  },
-  fieldBoxFocused: {
-    borderColor: "#7c3aed", backgroundColor: "#faf5ff",
-    shadowColor: "#7c3aed", shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12, shadowRadius: 6, elevation: 2,
   },
   fieldInput: { flex: 1, fontSize: 16, fontWeight: "700", color: "#1e1b4b", padding: 0 },
 

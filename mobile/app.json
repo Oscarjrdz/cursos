@@ -29,7 +29,7 @@
       },
       "package": "com.candidatic.knowledge",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
       "permissions": ["INTERNET"]
     },

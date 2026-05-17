@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
@@ -12,8 +13,21 @@ import Svg, { Path, Circle, Rect } from "react-native-svg"
 import { useAuth } from "../../lib/auth"
 import { apiRequest } from "../../lib/api"
 
-type Entry = { rank: number; userId: string; userName: string; xpTotal: number }
+type Reactions = { counts: Record<string, number>; myReactions: string[] }
+type Entry = { rank: number; userId: string; userName: string; xpTotal: number; reactions: Reactions }
 type RankingData = { entries: Entry[]; currentUserId: string }
+
+/* ─── Reaction config ────────────────────────────────────── */
+const REACTION_TYPES = [
+  { key: "fire",      emoji: "🔥", label: "Fuego" },
+  { key: "love",      emoji: "❤️", label: "Love" },
+  { key: "crown",     emoji: "👑", label: "Corona" },
+  { key: "gem",       emoji: "💎", label: "Gema" },
+  { key: "lightning", emoji: "⚡", label: "Rayo" },
+  { key: "brain",     emoji: "🧠", label: "Genio" },
+  { key: "like",      emoji: "👍", label: "Like" },
+  { key: "bullseye",  emoji: "🎯", label: "Meta" },
+] as const
 
 /* ─── Duolingo Colors ────────────────────────────────────── */
 const DUO = {
@@ -103,8 +117,105 @@ function Avatar({ name, rank, isMe }: { name: string; rank: number; isMe: boolea
   )
 }
 
+/* ─── Reaction Bar Component ─────────────────────────────── */
+function ReactionBar({
+  reactions,
+  isMe,
+  onToggle,
+  disabled,
+}: {
+  reactions: Reactions
+  isMe: boolean
+  onToggle: (type: string) => void
+  disabled: boolean
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const totalCount = Object.values(reactions.counts).reduce((a, b) => a + b, 0)
+
+  // Show summary (received reactions) + expand button
+  if (!expanded) {
+    const receivedTypes = REACTION_TYPES.filter(r => (reactions.counts[r.key] ?? 0) > 0)
+    return (
+      <View style={styles.reactionRow}>
+        {/* Show received reactions summary */}
+        {receivedTypes.length > 0 && (
+          <View style={styles.reactionSummary}>
+            {receivedTypes.map(r => (
+              <View key={r.key} style={[
+                styles.reactionChip,
+                reactions.myReactions.includes(r.key) && styles.reactionChipActive,
+              ]}>
+                <Text style={styles.reactionEmoji}>{r.emoji}</Text>
+                <Text style={[
+                  styles.reactionCount,
+                  reactions.myReactions.includes(r.key) && styles.reactionCountActive,
+                ]}>{reactions.counts[r.key]}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {/* Add reaction button (not for self) */}
+        {!isMe && (
+          <Pressable
+            onPress={() => setExpanded(true)}
+            style={({ pressed }) => [styles.addReactionBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.addReactionText}>
+              {totalCount > 0 ? "+" : "😀+"}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    )
+  }
+
+  // Expanded: show all reaction options
+  return (
+    <View style={styles.reactionExpandedWrap}>
+      <View style={styles.reactionExpandedRow}>
+        {REACTION_TYPES.map(r => {
+          const isActive = reactions.myReactions.includes(r.key)
+          const count = reactions.counts[r.key] ?? 0
+          return (
+            <Pressable
+              key={r.key}
+              onPress={() => { onToggle(r.key); setExpanded(false) }}
+              disabled={disabled}
+              style={({ pressed }) => [
+                styles.reactionOption,
+                isActive && styles.reactionOptionActive,
+                pressed && { transform: [{ scale: 1.2 }] },
+              ]}
+            >
+              <Text style={{ fontSize: 18 }}>{r.emoji}</Text>
+              {count > 0 && (
+                <Text style={[styles.reactionOptionCount, isActive && { color: DUO.blue }]}>
+                  {count}
+                </Text>
+              )}
+            </Pressable>
+          )
+        })}
+      </View>
+      <Pressable onPress={() => setExpanded(false)} style={styles.reactionCloseBtn}>
+        <Text style={styles.reactionCloseText}>✕</Text>
+      </Pressable>
+    </View>
+  )
+}
+
 /* ─── Rank Row ───────────────────────────────────────────── */
-function RankRow({ item, isMe }: { item: Entry; isMe: boolean }) {
+function RankRow({
+  item,
+  isMe,
+  onToggleReaction,
+  reactionLoading,
+}: {
+  item: Entry
+  isMe: boolean
+  onToggleReaction: (toUserId: string, type: string) => void
+  reactionLoading: boolean
+}) {
   const config = RANK_CONFIG[item.rank]
   const isTop3 = item.rank <= 3
   return (
@@ -113,39 +224,50 @@ function RankRow({ item, isMe }: { item: Entry; isMe: boolean }) {
       isTop3 && { borderColor: config?.border, backgroundColor: config?.bg, borderBottomWidth: 4, borderBottomColor: config?.border + "40" },
       isMe && !isTop3 && styles.rowMe,
     ]}>
-      {/* Rank number */}
-      <View style={[styles.rankBadge, isTop3 && { backgroundColor: config?.border }]}>
-        <Text style={[styles.rankText, isTop3 && { color: "#FFFFFF" }]}>
-          {config?.label ?? item.rank}
-        </Text>
-      </View>
+      {/* Top section: rank + avatar + name + xp */}
+      <View style={styles.rowTop}>
+        {/* Rank number */}
+        <View style={[styles.rankBadge, isTop3 && { backgroundColor: config?.border }]}>
+          <Text style={[styles.rankText, isTop3 && { color: "#FFFFFF" }]}>
+            {config?.label ?? item.rank}
+          </Text>
+        </View>
 
-      {/* Avatar */}
-      <Avatar name={item.userName} rank={item.rank} isMe={isMe} />
+        {/* Avatar */}
+        <Avatar name={item.userName} rank={item.rank} isMe={isMe} />
 
-      {/* Name & XP */}
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.name, isMe && { color: DUO.blue, fontWeight: "900" }]} numberOfLines={1}>
-          {item.userName}
-          {isMe ? "  (tú)" : ""}
-        </Text>
-        <View style={styles.xpRow}>
-          <IconGem size={12} />
-          <Text style={styles.xpLabel}>{item.xpTotal} XP</Text>
+        {/* Name & XP */}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.name, isMe && { color: DUO.blue, fontWeight: "900" }]} numberOfLines={1}>
+            {item.userName}
+            {isMe ? "  (tú)" : ""}
+          </Text>
+          <View style={styles.xpRow}>
+            <IconGem size={12} />
+            <Text style={styles.xpLabel}>{item.xpTotal} XP</Text>
+          </View>
+        </View>
+
+        {/* XP Badge */}
+        <View style={[
+          styles.xpBadge,
+          isTop3 && { backgroundColor: config?.border },
+          isMe && !isTop3 && { backgroundColor: DUO.blue },
+        ]}>
+          <Text style={[
+            styles.xpNum,
+            (isTop3 || isMe) && { color: "#FFFFFF" },
+          ]}>{item.xpTotal}</Text>
         </View>
       </View>
 
-      {/* XP Badge */}
-      <View style={[
-        styles.xpBadge,
-        isTop3 && { backgroundColor: config?.border },
-        isMe && !isTop3 && { backgroundColor: DUO.blue },
-      ]}>
-        <Text style={[
-          styles.xpNum,
-          (isTop3 || isMe) && { color: "#FFFFFF" },
-        ]}>{item.xpTotal}</Text>
-      </View>
+      {/* Reactions section */}
+      <ReactionBar
+        reactions={item.reactions}
+        isMe={isMe}
+        onToggle={(type) => onToggleReaction(item.userId, type)}
+        disabled={reactionLoading}
+      />
     </View>
   )
 }
@@ -175,6 +297,7 @@ export default function RankingScreen() {
   const [data, setData] = useState<RankingData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [reactionLoading, setReactionLoading] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -190,6 +313,43 @@ export default function RankingScreen() {
 
   useEffect(() => { fetchData() }, [fetchData])
   const onRefresh = () => { setRefreshing(true); fetchData() }
+
+  const handleToggleReaction = useCallback(async (toUserId: string, type: string) => {
+    if (!data) return
+    setReactionLoading(true)
+
+    // Optimistic update
+    setData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        entries: prev.entries.map(entry => {
+          if (entry.userId !== toUserId) return entry
+          const wasActive = entry.reactions.myReactions.includes(type)
+          const newMyReactions = wasActive
+            ? entry.reactions.myReactions.filter(r => r !== type)
+            : [...entry.reactions.myReactions, type]
+          const newCounts = { ...entry.reactions.counts }
+          newCounts[type] = (newCounts[type] ?? 0) + (wasActive ? -1 : 1)
+          if (newCounts[type] <= 0) delete newCounts[type]
+          return { ...entry, reactions: { counts: newCounts, myReactions: newMyReactions } }
+        }),
+      }
+    })
+
+    try {
+      await apiRequest("/api/mobile/reactions", {
+        method: "POST",
+        token,
+        body: { toUserId, type },
+      })
+    } catch {
+      // Revert on error
+      fetchData()
+    } finally {
+      setReactionLoading(false)
+    }
+  }, [data, token, fetchData])
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -229,7 +389,12 @@ export default function RankingScreen() {
             ) : null
           }
           renderItem={({ item }) => (
-            <RankRow item={item} isMe={item.userId === data?.currentUserId} />
+            <RankRow
+              item={item}
+              isMe={item.userId === data?.currentUserId}
+              onToggleReaction={handleToggleReaction}
+              reactionLoading={reactionLoading}
+            />
           )}
         />
       )}
@@ -270,9 +435,6 @@ const styles = StyleSheet.create({
 
   /* Row */
   row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     backgroundColor: DUO.card,
     borderRadius: 16,
     padding: 14,
@@ -281,6 +443,11 @@ const styles = StyleSheet.create({
     borderColor: DUO.border,
     borderBottomWidth: 4,
     borderBottomColor: "#D5D5D5",
+  },
+  rowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   rowMe: {
     borderColor: DUO.blue,
@@ -329,6 +496,100 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   xpNum: { fontSize: 14, fontWeight: "900", color: DUO.textMuted },
+
+  /* Reactions */
+  reactionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    flexWrap: "wrap",
+  },
+  reactionSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flexWrap: "wrap",
+    flex: 1,
+  },
+  reactionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1.5,
+    borderColor: "#E8E8E8",
+  },
+  reactionChipActive: {
+    backgroundColor: "rgba(28,176,246,0.08)",
+    borderColor: DUO.blue,
+  },
+  reactionEmoji: { fontSize: 14 },
+  reactionCount: { fontSize: 12, fontWeight: "800", color: DUO.textMuted },
+  reactionCountActive: { color: DUO.blue },
+  addReactionBtn: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: "#E8E8E8",
+    borderStyle: "dashed",
+  },
+  addReactionText: { fontSize: 13, fontWeight: "700", color: DUO.textMuted },
+
+  reactionExpandedWrap: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reactionExpandedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    flex: 1,
+    flexWrap: "wrap",
+  },
+  reactionOption: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    minWidth: 36,
+  },
+  reactionOptionActive: {
+    backgroundColor: "rgba(28,176,246,0.1)",
+    borderColor: DUO.blue,
+    borderRadius: 12,
+  },
+  reactionOptionCount: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: DUO.textMuted,
+    marginTop: 1,
+  },
+  reactionCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 4,
+  },
+  reactionCloseText: { fontSize: 12, fontWeight: "900", color: DUO.textMuted },
 
   /* Empty */
   emptyWrap: { paddingTop: 40, alignItems: "center" },
