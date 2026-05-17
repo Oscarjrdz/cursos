@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!session?.userId || !session.tenantId)
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-  const [enrollments, reactions] = await Promise.all([
+  const [enrollments, reactions, comments] = await Promise.all([
     prisma.enrollment.findMany({
       where: { user: { tenantId: session.tenantId, role: "STUDENT" } },
       orderBy: { xpTotal: "desc" },
@@ -17,6 +17,11 @@ export async function GET(req: NextRequest) {
     prisma.rankingReaction.findMany({
       where: { tenantId: session.tenantId },
       select: { fromUserId: true, toUserId: true, type: true },
+    }),
+    prisma.rankingComment.groupBy({
+      by: ["toUserId"],
+      where: { tenantId: session.tenantId },
+      _count: { id: true },
     }),
   ])
 
@@ -28,12 +33,19 @@ export async function GET(req: NextRequest) {
     if (r.fromUserId === session.userId) reactionMap[r.toUserId].myReactions.push(r.type)
   }
 
+  // Map comment counts
+  const commentCountsMap: Record<string, number> = {}
+  for (const c of comments) {
+    commentCountsMap[c.toUserId] = c._count.id
+  }
+
   const entries = enrollments.map((e, i) => ({
     rank: i + 1,
     userId: e.user.id,
     userName: e.user.name,
     xpTotal: e.xpTotal,
     reactions: reactionMap[e.user.id] ?? { counts: {}, myReactions: [] },
+    commentCount: commentCountsMap[e.user.id] ?? 0,
   }))
 
   return NextResponse.json({ entries, currentUserId: session.userId })

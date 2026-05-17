@@ -2,10 +2,14 @@ import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -14,8 +18,9 @@ import { useAuth } from "../../lib/auth"
 import { apiRequest } from "../../lib/api"
 
 type Reactions = { counts: Record<string, number>; myReactions: string[] }
-type Entry = { rank: number; userId: string; userName: string; xpTotal: number; reactions: Reactions }
+type Entry = { rank: number; userId: string; userName: string; xpTotal: number; reactions: Reactions; commentCount: number }
 type RankingData = { entries: Entry[]; currentUserId: string }
+type Comment = { id: string; fromUserId: string; fromName: string; text: string; createdAt: string }
 
 /* ─── Reaction config ────────────────────────────────────── */
 const REACTION_TYPES = [
@@ -123,11 +128,15 @@ function ReactionBar({
   isMe,
   onToggle,
   disabled,
+  commentCount,
+  onOpenComments
 }: {
   reactions: Reactions
   isMe: boolean
   onToggle: (type: string) => void
   disabled: boolean
+  commentCount: number
+  onOpenComments: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const totalCount = Object.values(reactions.counts).reduce((a, b) => a + b, 0)
@@ -154,6 +163,17 @@ function ReactionBar({
             ))}
           </View>
         )}
+
+        <View style={{ flex: 1 }} />
+
+        {/* Comments Button */}
+        <Pressable
+          onPress={onOpenComments}
+          style={({ pressed }) => [styles.commentBtn, pressed && { opacity: 0.6 }]}
+        >
+          <Text style={styles.commentBtnText}>💬 {commentCount > 0 ? commentCount : "Dejar un mensaje"}</Text>
+        </Pressable>
+
         {/* Add reaction button (not for self) */}
         {!isMe && (
           <Pressable
@@ -210,11 +230,13 @@ function RankRow({
   isMe,
   onToggleReaction,
   reactionLoading,
+  onOpenComments
 }: {
   item: Entry
   isMe: boolean
   onToggleReaction: (toUserId: string, type: string) => void
   reactionLoading: boolean
+  onOpenComments: (userId: string, userName: string) => void
 }) {
   const config = RANK_CONFIG[item.rank]
   const isTop3 = item.rank <= 3
@@ -267,6 +289,8 @@ function RankRow({
         isMe={isMe}
         onToggle={(type) => onToggleReaction(item.userId, type)}
         disabled={reactionLoading}
+        commentCount={item.commentCount}
+        onOpenComments={() => onOpenComments(item.userId, item.userName)}
       />
     </View>
   )
@@ -290,6 +314,123 @@ function EmptyRanking() {
   )
 }
 
+/* ─── Comments Modal ─────────────────────────────────────── */
+function CommentsModal({
+  visible,
+  onClose,
+  userId,
+  userName,
+  token,
+  onCommentAdded
+}: {
+  visible: boolean
+  onClose: () => void
+  userId: string
+  userName: string
+  token: string | null
+  onCommentAdded: () => void
+}) {
+  const insets = useSafeAreaInsets()
+  const [comments, setComments] = useState<Comment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [text, setText] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!visible || !userId) return
+    setLoading(true)
+    apiRequest<{ comments: Comment[] }>(`/api/mobile/comments?toUserId=${userId}`, { token })
+      .then(res => setComments(res.comments))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [visible, userId, token])
+
+  const handleSubmit = async () => {
+    if (!text.trim() || submitting) return
+    setSubmitting(true)
+    try {
+      const res = await apiRequest<{ comment: Comment }>("/api/mobile/comments", {
+        method: "POST",
+        token,
+        body: { toUserId: userId, text }
+      })
+      setComments(prev => [res.comment, ...prev])
+      setText("")
+      onCommentAdded()
+    } catch (e) {
+      // Handle error silently
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <View style={[styles.modalContent, { paddingBottom: insets.bottom || 20 }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Mensajes para {userName}</Text>
+            <Pressable onPress={onClose} style={styles.modalCloseBtn}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </Pressable>
+          </View>
+
+          {loading ? (
+            <View style={styles.modalLoading}>
+              <ActivityIndicator color={DUO.blue} />
+            </View>
+          ) : (
+            <FlatList
+              data={comments}
+              keyExtractor={item => item.id}
+              inverted
+              contentContainerStyle={styles.commentsList}
+              ListEmptyComponent={
+                <Text style={styles.emptyCommentsText}>Se el primero en dejar un mensaje 💬</Text>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.commentItem}>
+                  <View style={styles.commentAvatar}>
+                    <Text style={styles.commentAvatarText}>
+                      {item.fromName.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.commentBubble}>
+                    <Text style={styles.commentAuthor}>{item.fromName}</Text>
+                    <Text style={styles.commentText}>{item.text}</Text>
+                  </View>
+                </View>
+              )}
+            />
+          )}
+
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <View style={styles.commentInputWrap}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Escribe un mensaje animador..."
+                placeholderTextColor={DUO.textMuted}
+                value={text}
+                onChangeText={setText}
+                multiline
+                maxLength={200}
+              />
+              <Pressable 
+                onPress={handleSubmit} 
+                disabled={!text.trim() || submitting}
+                style={[styles.commentSubmitBtn, (!text.trim() || submitting) && { opacity: 0.5 }]}
+              >
+                {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.commentSubmitText}>↑</Text>}
+              </Pressable>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
 /* ─── Main Screen ────────────────────────────────────────── */
 export default function RankingScreen() {
   const { token } = useAuth()
@@ -298,6 +439,10 @@ export default function RankingScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [reactionLoading, setReactionLoading] = useState(false)
+
+  // Modal State
+  const [commentsModalVisible, setCommentsModalVisible] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<{ id: string, name: string } | null>(null)
 
   const fetchData = useCallback(async () => {
     try {
@@ -351,6 +496,28 @@ export default function RankingScreen() {
     }
   }, [data, token, fetchData])
 
+  const handleOpenComments = (userId: string, userName: string) => {
+    setSelectedUser({ id: userId, name: userName })
+    setCommentsModalVisible(true)
+  }
+
+  const handleCommentAdded = () => {
+    if (!selectedUser) return
+    // Optimistically update comment count in list
+    setData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        entries: prev.entries.map(entry => {
+          if (entry.userId === selectedUser.id) {
+            return { ...entry, commentCount: (entry.commentCount || 0) + 1 }
+          }
+          return entry
+        })
+      }
+    })
+  }
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -394,8 +561,20 @@ export default function RankingScreen() {
               isMe={item.userId === data?.currentUserId}
               onToggleReaction={handleToggleReaction}
               reactionLoading={reactionLoading}
+              onOpenComments={handleOpenComments}
             />
           )}
+        />
+      )}
+
+      {selectedUser && (
+        <CommentsModal
+          visible={commentsModalVisible}
+          onClose={() => setCommentsModalVisible(false)}
+          userId={selectedUser.id}
+          userName={selectedUser.name}
+          token={token}
+          onCommentAdded={handleCommentAdded}
         />
       )}
     </View>
@@ -513,7 +692,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     flexWrap: "wrap",
-    flex: 1,
   },
   reactionChip: {
     flexDirection: "row",
@@ -533,6 +711,17 @@ const styles = StyleSheet.create({
   reactionEmoji: { fontSize: 14 },
   reactionCount: { fontSize: 12, fontWeight: "800", color: DUO.textMuted },
   reactionCountActive: { color: DUO.blue },
+  
+  commentBtn: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: "#E8E8E8",
+  },
+  commentBtnText: { fontSize: 13, fontWeight: "700", color: DUO.textMuted },
+
   addReactionBtn: {
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
@@ -607,4 +796,147 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: "900", color: DUO.text, marginTop: 16 },
   emptySub: { fontSize: 13, color: DUO.textMuted, fontWeight: "600", marginTop: 6, textAlign: "center" },
   emptyStars: { flexDirection: "row", gap: 6, marginTop: 16, alignItems: "center" },
+
+  /* Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalContent: {
+    backgroundColor: DUO.bg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: DUO.border,
+    backgroundColor: DUO.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: DUO.text,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    backgroundColor: "#F0F0F0",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCloseText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: DUO.textMuted,
+  },
+  modalLoading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  commentsList: {
+    padding: 16,
+    gap: 16,
+  },
+  emptyCommentsText: {
+    textAlign: "center",
+    color: DUO.textMuted,
+    fontWeight: "600",
+    marginTop: 40,
+    fontSize: 15,
+  },
+  commentItem: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E5E5E5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  commentAvatarText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#666",
+  },
+  commentBubble: {
+    flex: 1,
+    backgroundColor: DUO.card,
+    padding: 12,
+    borderRadius: 16,
+    borderTopLeftRadius: 4,
+    borderWidth: 2,
+    borderColor: DUO.border,
+    borderBottomWidth: 4,
+    borderBottomColor: "#D5D5D5",
+  },
+  commentAuthor: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: DUO.text,
+    marginBottom: 4,
+  },
+  commentText: {
+    fontSize: 14,
+    color: "#555",
+    lineHeight: 20,
+  },
+  commentInputWrap: {
+    flexDirection: "row",
+    padding: 12,
+    backgroundColor: DUO.card,
+    borderTopWidth: 2,
+    borderTopColor: DUO.border,
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: DUO.border,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    minHeight: 44,
+    maxHeight: 100,
+    fontSize: 15,
+    color: DUO.text,
+  },
+  commentSubmitBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: DUO.blue,
+    justifyContent: "center",
+    alignItems: "center",
+    borderBottomWidth: 3,
+    borderBottomColor: DUO.blueDark,
+  },
+  commentSubmitText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "900",
+  },
 })
