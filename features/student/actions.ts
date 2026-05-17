@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/session"
 
 export async function completeLesson(userId: string, lessonId: string, tenantSlug: string) {
   // Upsert completion (idempotent)
@@ -74,4 +75,78 @@ export async function completeLesson(userId: string, lessonId: string, tenantSlu
   }
 
   revalidatePath(`/${tenantSlug}/home`)
+}
+
+export async function toggleRankingReaction(tenantSlug: string, toUserId: string, type: string) {
+  const session = await getSession()
+  if (!session?.userId) throw new Error("No autorizado")
+
+  const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug } })
+  if (!tenant) throw new Error("Tenant no encontrado")
+
+  const existing = await prisma.rankingReaction.findFirst({
+    where: {
+      tenantId: tenant.id,
+      fromUserId: session.userId,
+      toUserId,
+      type,
+    },
+  })
+
+  if (existing) {
+    await prisma.rankingReaction.delete({ where: { id: existing.id } })
+  } else {
+    await prisma.rankingReaction.create({
+      data: {
+        tenantId: tenant.id,
+        fromUserId: session.userId,
+        toUserId,
+        type,
+      },
+    })
+  }
+}
+
+export async function getRankingComments(tenantSlug: string, toUserId: string) {
+  const session = await getSession()
+  if (!session?.userId) throw new Error("No autorizado")
+
+  const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug } })
+  if (!tenant) throw new Error("Tenant no encontrado")
+
+  const comments = await prisma.rankingComment.findMany({
+    where: { tenantId: tenant.id, toUserId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  })
+
+  return comments
+}
+
+export async function addRankingComment(tenantSlug: string, toUserId: string, text: string) {
+  const session = await getSession()
+  if (!session?.userId) throw new Error("No autorizado")
+
+  const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug } })
+  if (!tenant) throw new Error("Tenant no encontrado")
+
+  if (!text || text.trim() === "") throw new Error("Comentario vacío")
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true },
+  })
+  if (!user) throw new Error("Usuario no encontrado")
+
+  const comment = await prisma.rankingComment.create({
+    data: {
+      tenantId: tenant.id,
+      fromUserId: session.userId,
+      fromName: user.name,
+      toUserId,
+      text: text.trim(),
+    },
+  })
+
+  return comment
 }

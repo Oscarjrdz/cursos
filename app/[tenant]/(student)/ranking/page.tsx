@@ -1,75 +1,66 @@
-"use client"
+import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/session"
+import { notFound, redirect } from "next/navigation"
+import StudentRanking from "@/features/student/components/StudentRanking"
 
-import { usePathname } from "next/navigation"
-import Link from "next/link"
-import { useParams } from "next/navigation"
+export const dynamic = "force-dynamic"
 
-function BottomNav({ tenantSlug }: { tenantSlug: string }) {
-  const pathname = usePathname()
-  const tabs = [
-    { label: "Inicio",  icon: "🏠", href: `/${tenantSlug}/home` },
-    { label: "Ranking", icon: "🏆", href: `/${tenantSlug}/ranking` },
-    { label: "Logros",  icon: "🎖", href: `/${tenantSlug}/achievements` },
-    { label: "Perfil",  icon: "👤", href: `/${tenantSlug}/profile` },
-  ]
+export default async function RankingPage({ params }: { params: Promise<{ tenant: string }> }) {
+  const { tenant: slug } = await params
+  const session = await getSession()
+
+  if (!session?.userId) redirect(`/${slug}/login`)
+
+  const tenant = await prisma.tenant.findUnique({ where: { slug } })
+  if (!tenant) notFound()
+
+  // Fetch rankings
+  const [enrollments, reactions, comments] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { user: { tenantId: tenant.id, role: "STUDENT" } },
+      orderBy: { xpTotal: "desc" },
+      include: { user: { select: { id: true, name: true } } },
+      take: 50,
+    }),
+    prisma.rankingReaction.findMany({
+      where: { tenantId: tenant.id },
+      select: { fromUserId: true, toUserId: true, type: true },
+    }),
+    prisma.rankingComment.groupBy({
+      by: ["toUserId"],
+      where: { tenantId: tenant.id },
+      _count: { id: true },
+    }),
+  ])
+
+  // Group reactions
+  const reactionMap: Record<string, { counts: Record<string, number>; myReactions: string[] }> = {}
+  for (const r of reactions) {
+    if (!reactionMap[r.toUserId]) reactionMap[r.toUserId] = { counts: {}, myReactions: [] }
+    reactionMap[r.toUserId].counts[r.type] = (reactionMap[r.toUserId].counts[r.type] || 0) + 1
+    if (r.fromUserId === session.userId) reactionMap[r.toUserId].myReactions.push(r.type)
+  }
+
+  // Map comment counts
+  const commentCountsMap: Record<string, number> = {}
+  for (const c of comments) {
+    commentCountsMap[c.toUserId] = c._count.id
+  }
+
+  const entries = enrollments.map((e, i) => ({
+    rank: i + 1,
+    userId: e.user.id,
+    userName: e.user.name,
+    xpTotal: e.xpTotal,
+    reactions: reactionMap[e.user.id] ?? { counts: {}, myReactions: [] },
+    commentCount: commentCountsMap[e.user.id] ?? 0,
+  }))
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50"
-      style={{ background: "#ffffff", borderTop: "1px solid #e2e8f0", paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="flex items-center justify-around max-w-lg mx-auto">
-        {tabs.map((tab) => {
-          const active = pathname === tab.href
-          return (
-            <Link key={tab.href} href={tab.href}
-              className="flex flex-col items-center gap-0.5 py-3 px-5 transition-all"
-              style={{ color: active ? "#7c3aed" : "#94a3b8" }}>
-              <span className="text-xl leading-none">{tab.icon}</span>
-              <span className="text-[10px] font-semibold mt-0.5">{tab.label}</span>
-              {active && <div className="w-1 h-1 rounded-full mt-0.5" style={{ background: "#7c3aed" }} />}
-            </Link>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-export default function RankingPage() {
-  const params = useParams()
-  const slug = params.tenant as string
-
-  return (
-    <div className="min-h-screen pb-28" style={{ background: "#f8fafc" }}>
-      {/* Header */}
-      <div className="sticky top-0 z-40 px-4 py-3"
-        style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
-        <div className="max-w-lg mx-auto flex items-center gap-2">
-          <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={28} height={28} alt="" />
-          <span className="text-xs font-bold" style={{ color: "#0f172a" }}>Candidatic </span>
-          <span className="text-xs font-bold" style={{ color: "#7c3aed" }}>Knowledge</span>
-        </div>
-      </div>
-
-      <div className="px-4 pt-5 max-w-lg mx-auto">
-        <h1 className="text-xl font-black mb-1" style={{ color: "#0f172a" }}>🏆 Ranking</h1>
-        <p className="text-sm mb-6" style={{ color: "#94a3b8" }}>Posición semanal del equipo</p>
-
-        <div className="rounded-2xl overflow-hidden" style={{ background: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <div className="px-4 py-3 text-center" style={{ borderBottom: "1px solid #f1f5f9" }}>
-            <p className="text-xs font-semibold" style={{ color: "#94a3b8" }}>
-              El ranking se actualiza en tiempo real
-            </p>
-          </div>
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="text-5xl">🏆</span>
-            <p className="font-bold text-sm" style={{ color: "#0f172a" }}>Ranking próximamente</p>
-            <p className="text-xs text-center" style={{ color: "#94a3b8" }}>
-              Completa lecciones para aparecer aquí
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <BottomNav tenantSlug={slug} />
-    </div>
+    <StudentRanking 
+      tenantSlug={slug} 
+      entries={entries} 
+      currentUserId={session.userId} 
+    />
   )
 }
