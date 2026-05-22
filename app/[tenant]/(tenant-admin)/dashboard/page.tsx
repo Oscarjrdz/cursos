@@ -98,7 +98,7 @@ export default async function TenantDashboardPage({ params }: { params: Promise<
     <TenantAdminDashboard
       tenantSlug={slug}
       data={{
-        tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents },
+        tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents, logoUrl: tenant.logoUrl, expiresAt: tenant.expiresAt?.toISOString() ?? null },
         stats: { activeStudents, avgProgress, atRisk, nearExpiry },
         students,
         availableCourses,

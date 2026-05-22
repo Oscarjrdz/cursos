@@ -14,6 +14,7 @@ model Tenant {
   id          String       @id @default(cuid())
   slug        String       @unique
   name        String
+  logoUrl     String?
   maxStudents Int          @default(50)
   status      TenantStatus @default(ACTIVE)
   expiresAt     DateTime?

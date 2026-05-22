@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { createStudent, updateStudent, setStudentCredentials, deleteStudent, enrollStudent, unenrollStudent, resetStudentProgress } from "@/features/tenant-admin/actions"
@@ -27,7 +27,7 @@ type Course = { id: string; title: string }
 type Props = {
   tenantSlug: string
   data: {
-    tenant: { name: string; slug: string; maxStudents: number }
+    tenant: { name: string; slug: string; maxStudents: number; logoUrl: string | null; expiresAt: string | null }
     stats: { activeStudents: number; avgProgress: number; atRisk: number; nearExpiry: number }
     students: Student[]
     availableCourses: Course[]
@@ -409,7 +409,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-function StatCard({ icon, label, value, sub, accent }: { icon: string; label: string; value: string | number; sub?: string; accent?: string }) {
+function StatCard({ icon, label, value, sub, sub2, accent }: { icon: string; label: string; value: string | number; sub?: string; sub2?: string; accent?: string }) {
   return (
     <div className="rounded-2xl p-5" style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
       <div className="flex items-center justify-between mb-3">
@@ -418,7 +418,87 @@ function StatCard({ icon, label, value, sub, accent }: { icon: string; label: st
       </div>
       <p className="text-2xl font-bold" style={{ color: accent ?? "#0f172a" }}>{value}</p>
       {sub && <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>{sub}</p>}
+      {sub2 && <p className="text-xs mt-0.5 font-semibold" style={{ color: "#16a34a" }}>{sub2}</p>}
     </div>
+  )
+}
+
+/* ─── License expired overlay ──────────────────────────────── */
+function LicenseExpiredOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(8px)" }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.88, y: 20 }}
+          transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+          className="w-full max-w-md rounded-3xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(248,250,252,0.98))",
+            boxShadow: "0 32px 80px rgba(124,58,237,0.25), 0 0 0 1px rgba(124,58,237,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+            backdropFilter: "blur(20px)",
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Top gradient accent */}
+          <div className="h-2 w-full" style={{ background: "linear-gradient(90deg, #7c3aed, #ec4899, #f59e0b)" }} />
+
+          <div className="p-8 text-center">
+            {/* Animated icon */}
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              style={{
+                background: "linear-gradient(135deg, #faf5ff, #fce7f3)",
+                border: "2px solid #e9d5ff",
+                boxShadow: "0 8px 24px rgba(124,58,237,0.15)",
+              }}
+            >
+              <span style={{ fontSize: 40 }}>🔒</span>
+            </motion.div>
+
+            <h2 className="text-xl font-bold mb-2" style={{ color: "#0f172a" }}>
+              Licencia vencida
+            </h2>
+            <p className="text-sm mb-1" style={{ color: "#64748b" }}>
+              Tu acceso ha expirado y no puedes crear ni editar contenido.
+            </p>
+            <p className="text-sm font-semibold mb-6" style={{ color: "#7c3aed" }}>
+              Contacta a tu administrador para renovar tu licencia
+            </p>
+
+            {/* Decorative info box */}
+            <div className="rounded-2xl p-4 mb-6" style={{ background: "#faf5ff", border: "1px solid #e9d5ff" }}>
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm">📧</span>
+                <span className="text-xs font-medium" style={{ color: "#7c3aed" }}>soporte@candidatic.com</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                color: "#ffffff",
+                boxShadow: "0 4px 14px rgba(124,58,237,0.4)",
+              }}
+            >
+              Entendido
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   )
 }
 
@@ -428,7 +508,28 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
   const [showCreate, setShowCreate]   = useState(false)
   const [editing,    setEditing]      = useState<Student | null>(null)
   const [resetting,  setResetting]    = useState<Student | null>(null)
+  const [logoUrl,    setLogoUrl]      = useState<string | null>(tenant.logoUrl)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [showExpiredOverlay, setShowExpiredOverlay] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  // License expired check
+  const isLicenseExpired = tenant.expiresAt ? new Date(tenant.expiresAt) < new Date() : false
+  const remaining = tenant.maxStudents - stats.activeStudents
+
+  // Show overlay every 30s if license expired
+  useEffect(() => {
+    if (!isLicenseExpired) return
+    setShowExpiredOverlay(true)
+    const interval = setInterval(() => setShowExpiredOverlay(true), 30000)
+    return () => clearInterval(interval)
+  }, [isLicenseExpired])
+
+  // Format expiration date
+  const expiresFormatted = tenant.expiresAt
+    ? new Date(tenant.expiresAt).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })
+    : null
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" })
@@ -436,35 +537,102 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
     router.refresh()
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        const base64 = dataUrl.split(",")[1]
+        const mimeType = file.type || "image/jpeg"
+        const res = await fetch(`/api/tenants/${tenantSlug}/logo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, mimeType }),
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setLogoUrl(json.logoUrl)
+        }
+        setUploadingLogo(false)
+      }
+      reader.readAsDataURL(file)
+    } catch {
+      setUploadingLogo(false)
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "#f1f5f9" }}>
-      {showCreate && <CreateModal tenantSlug={tenantSlug} onClose={() => setShowCreate(false)} />}
-      {editing    && <EditModal student={editing} tenantSlug={tenantSlug} availableCourses={availableCourses} onClose={() => setEditing(null)} />}
+      {showCreate && !isLicenseExpired && <CreateModal tenantSlug={tenantSlug} onClose={() => setShowCreate(false)} />}
+      {editing && !isLicenseExpired && <EditModal student={editing} tenantSlug={tenantSlug} availableCourses={availableCourses} onClose={() => setEditing(null)} />}
       {resetting  && <ResetModal student={resetting} tenantSlug={tenantSlug} onClose={() => setResetting(null)} />}
+      {showExpiredOverlay && <LicenseExpiredOverlay onClose={() => setShowExpiredOverlay(false)} />}
+
+      {/* Hidden file input for logo */}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
 
       {/* Header */}
       <div className="px-8 py-5" style={{ background: "#ffffff", borderBottom: "1px solid #e2e8f0" }}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium" style={{ color: "#94a3b8" }}>Dashboard Admin</p>
-            <h1 className="text-2xl font-bold mt-0.5" style={{ color: "#0f172a" }}>{tenant.name}</h1>
-            <div className="flex items-center gap-1.5 mt-1">
-              <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={14} height={14} alt="" />
-              <span className="text-xs font-medium" style={{ color: "#7c3aed" }}>Candidatic Knowledge</span>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-xs" style={{ color: "#94a3b8" }}>Liga alumnos:</span>
-              <a href={`/${tenant.slug}/alumno`} target="_blank"
-                className="text-xs font-semibold hover:underline"
-                style={{ color: "#7c3aed" }}>
-                /{tenant.slug}/alumno
-              </a>
+          <div className="flex items-center gap-4">
+            {/* Logo / Avatar */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingLogo}
+              className="relative group flex-shrink-0"
+              title="Cambiar logo de empresa"
+            >
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden transition-all group-hover:ring-2 group-hover:ring-purple-300"
+                style={{ background: logoUrl ? "transparent" : "#7c3aed", border: logoUrl ? "2px solid #e2e8f0" : "none" }}>
+                {logoUrl ? (
+                  <img src={logoUrl} alt={tenant.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-white">{tenant.name.charAt(0)}</span>
+                )}
+              </div>
+              <div className="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-white text-xs font-semibold">{uploadingLogo ? "..." : "📷"}</span>
+              </div>
+            </button>
+
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#94a3b8" }}>Dashboard Admin</p>
+              <h1 className="text-2xl font-bold mt-0.5" style={{ color: "#0f172a" }}>{tenant.name}</h1>
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <img src="https://cdn-icons-png.flaticon.com/128/11051/11051168.png" width={14} height={14} alt="" />
+                  <span className="text-xs font-medium" style={{ color: "#7c3aed" }}>Candidatic Knowledge</span>
+                </div>
+                {expiresFormatted && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+                    style={isLicenseExpired
+                      ? { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }
+                      : { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }
+                    }>
+                    {isLicenseExpired ? "⚠️ Vencida" : "📅"} {expiresFormatted}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-xs" style={{ color: "#94a3b8" }}>Liga alumnos:</span>
+                <a href={`/${tenant.slug}/alumno`} target="_blank"
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: "#7c3aed" }}>
+                  /{tenant.slug}/alumno
+                </a>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-xs" style={{ color: "#94a3b8" }}>Alumnos</p>
               <p className="font-bold text-sm" style={{ color: "#0f172a" }}>{stats.activeStudents}<span style={{ color: "#94a3b8" }}>/{tenant.maxStudents}</span></p>
+              <p className="text-xs font-medium" style={{ color: remaining > 0 ? "#16a34a" : "#dc2626" }}>
+                {remaining > 0 ? `${remaining} disponibles` : "Sin lugares"}
+              </p>
             </div>
             <button onClick={handleLogout} className="text-xs px-4 py-2 rounded-xl font-medium transition-all hover:bg-slate-100" style={{ background: "#f1f5f9", color: "#475569" }}>← Salir</button>
           </div>
@@ -474,10 +642,10 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
       <div className="px-8 py-6 max-w-5xl mx-auto space-y-6">
         {/* Stats */}
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon="👥" label="Alumnos activos"  value={stats.activeStudents} sub={`de ${tenant.maxStudents} permitidos`} accent="#7c3aed" />
+          <StatCard icon="👥" label="Alumnos activos"  value={stats.activeStudents} sub={`de ${tenant.maxStudents} permitidos`} sub2={remaining > 0 ? `✓ ${remaining} disponibles` : undefined} accent="#7c3aed" />
           <StatCard icon="📊" label="Progreso promedio" value={`${stats.avgProgress}%`} accent="#2563eb" />
-          <StatCard icon="⚠️" label="En riesgo"         value={stats.atRisk} sub="Inactivos +3 días" accent={stats.atRisk > 0 ? "#d97706" : "#059669"} />
-          <StatCard icon="⏰" label="Por vencer"         value={stats.nearExpiry} sub="Próximos 7 días" accent={stats.nearExpiry > 0 ? "#dc2626" : "#059669"} />
+          <StatCard icon="⚠️" label="Sin actividad"     value={stats.atRisk} sub="Alumnos inactivos +3 días" accent={stats.atRisk > 0 ? "#d97706" : "#059669"} />
+          <StatCard icon="⏰" label="Próximos a vencer" value={stats.nearExpiry} sub="Suscripción vence en 7 días" accent={stats.nearExpiry > 0 ? "#dc2626" : "#059669"} />
         </motion.div>
 
         {/* Table */}
@@ -487,7 +655,13 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
 
           <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid #f1f5f9" }}>
             <h2 className="font-semibold text-sm" style={{ color: "#0f172a" }}>Alumnos</h2>
-            <button onClick={() => setShowCreate(true)} className="text-sm px-4 py-2 rounded-xl font-medium text-white transition-all hover:opacity-90" style={{ background: "#7c3aed" }}>+ Nuevo alumno</button>
+            <button
+              onClick={() => isLicenseExpired ? setShowExpiredOverlay(true) : setShowCreate(true)}
+              className="text-sm px-4 py-2 rounded-xl font-medium text-white transition-all hover:opacity-90"
+              style={{ background: isLicenseExpired ? "#94a3b8" : "#7c3aed" }}
+            >
+              + Nuevo alumno
+            </button>
           </div>
 
           {students.length === 0 ? (
@@ -520,9 +694,9 @@ export default function TenantAdminDashboard({ tenantSlug, data }: Props) {
                         <p className="text-xs truncate" style={{ color: "#94a3b8" }}>{student.email}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => setEditing(student)}
+                        <button onClick={() => isLicenseExpired ? setShowExpiredOverlay(true) : setEditing(student)}
                           className="text-xs px-3.5 py-2 rounded-xl font-semibold transition-all hover:opacity-90"
-                          style={{ background: "#7c3aed", color: "#ffffff" }}>
+                          style={{ background: isLicenseExpired ? "#94a3b8" : "#7c3aed", color: "#ffffff" }}>
                           ✏️ Editar
                         </button>
                         <button onClick={() => setResetting(student)}
