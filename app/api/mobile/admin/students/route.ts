@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
       id: u.id,
       name: u.name,
       email: u.email,
+      avatarUrl: u.avatarUrl,
       phone: u.phone ?? null,
       status: u.status,
       courseName: primaryEnrollment?.course.title ?? null,

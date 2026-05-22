@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
@@ -26,6 +27,7 @@ import { apiRequest } from "../../lib/api"
 /* ── Types ──────────────────────────────────────────────── */
 type Student = {
   id: string; name: string; email: string; phone: string | null
+  avatarUrl?: string | null
   status: "ACTIVE" | "INACTIVE" | "EXPIRED" | "SUSPENDED"
   courseName: string | null; courseCount: number; progress: number
   lastAccess: string; streakDays: number
@@ -58,12 +60,16 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }
 }
 
 /* ─── Avatar ─────────────────────────────────────────────── */
-function Avatar({ name, status }: { name: string; status: string }) {
+function Avatar({ name, status, avatarUrl }: { name: string; status: string; avatarUrl?: string | null }) {
   const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()
   const color = status === "ACTIVE" ? DUO.green : status === "EXPIRED" ? DUO.orange : DUO.textMuted
   return (
     <View style={[styles.avatar, { borderColor: color, backgroundColor: status === "ACTIVE" ? DUO.green : "#E5E5E5" }]}>
-      <Text style={[styles.avatarText, { color: status === "ACTIVE" ? "#fff" : "#777" }]}>{initials}</Text>
+      {avatarUrl ? (
+        <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+      ) : (
+        <Text style={[styles.avatarText, { color: status === "ACTIVE" ? "#fff" : "#777" }]}>{initials}</Text>
+      )}
     </View>
   )
 }
@@ -475,7 +481,7 @@ export default function StudentsScreen() {
               <Pressable onPress={() => toggleExpand(s.id)} style={[styles.row, isExpanded && styles.rowExpanded]}>
                 {/* Top section */}
                 <View style={styles.rowTop}>
-                  <Avatar name={s.name} status={s.status} />
+                  <Avatar name={s.name} status={s.status} avatarUrl={s.avatarUrl} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name} numberOfLines={1}>{s.name}</Text>
                     <View style={styles.rowSubRow}>
@@ -687,8 +693,10 @@ const styles = StyleSheet.create({
   avatar: {
     width: 42, height: 42, borderRadius: 21, borderWidth: 3,
     justifyContent: "center", alignItems: "center",
+    overflow: "hidden",
   },
   avatarText: { fontSize: 14, fontWeight: "900" },
+  avatarImg: { width: "100%", height: "100%" },
 
   /* Name & status */
   name: { fontSize: 14, fontWeight: "700", color: DUO.text },
