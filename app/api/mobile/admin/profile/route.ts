@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
     tenantSlug: tenant.slug,
     maxStudents: tenant.maxStudents,
     adminPhone: tenant.adminPhone,
+    logoUrl: tenant.logoUrl,
+    expiresAt: tenant.expiresAt?.toISOString() ?? null,
     totalStudents: tenant.users.length,
     activeStudents: tenant.users.filter((u) => u.status === "ACTIVE").length,
   })
@@ -50,4 +52,26 @@ export async function PUT(req: NextRequest) {
   })
 
   return NextResponse.json({ ok: true })
+}
+
+// PATCH — upload tenant logo
+export async function PATCH(req: NextRequest) {
+  const session = await getMobileSession(req)
+  if (!session || session.role !== "TENANT_ADMIN" || !session.tenantId)
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+  const body = await req.json()
+  const { base64, mimeType = "image/jpeg" } = body as { base64?: string; mimeType?: string }
+
+  if (!base64)
+    return NextResponse.json({ error: "No se recibió imagen (base64)" }, { status: 400 })
+
+  const dataUri = `data:${mimeType};base64,${base64}`
+
+  await prisma.tenant.update({
+    where: { id: session.tenantId },
+    data: { logoUrl: dataUri },
+  })
+
+  return NextResponse.json({ logoUrl: dataUri })
 }

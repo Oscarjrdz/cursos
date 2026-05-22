@@ -15,6 +15,7 @@ import {
   Text,
   TextInput,
   View,
+  Dimensions,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path, Circle, Rect } from "react-native-svg"
@@ -33,7 +34,7 @@ type Student = {
 }
 type AvailableCourse = { id: string; title: string }
 type StudentsData = {
-  tenant: { name: string; slug: string; maxStudents: number }
+  tenant: { name: string; slug: string; maxStudents: number; expiresAt: string | null }
   stats: { activeStudents: number; avgProgress: number; atRisk: number; nearExpiry: number }
   students: Student[]
   availableCourses: AvailableCourse[]
@@ -347,6 +348,9 @@ export default function StudentsScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
+  const [showExpiredModal, setShowExpiredModal] = useState(false)
+
+  const isExpired = data?.tenant.expiresAt ? new Date(data.tenant.expiresAt) < new Date() : false
 
   const fetchData = useCallback(async () => {
     try {
@@ -358,6 +362,14 @@ export default function StudentsScreen() {
 
   useEffect(() => { fetchData() }, [fetchData])
   const onRefresh = () => { setRefreshing(true); fetchData() }
+
+  // Show expired overlay every 30s
+  useEffect(() => {
+    if (!isExpired) return
+    setShowExpiredModal(true)
+    const interval = setInterval(() => setShowExpiredModal(true), 30000)
+    return () => clearInterval(interval)
+  }, [isExpired])
 
   function toggleExpand(id: string) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
@@ -382,10 +394,17 @@ export default function StudentsScreen() {
             <Text style={styles.subtitle}>
               {data ? `${data.stats.activeStudents} de ${data.tenant.maxStudents} contratados` : "Cargando..."}
             </Text>
+            {data && (
+              <Text style={[styles.subtitle, { color: (data.tenant.maxStudents - data.stats.activeStudents) > 0 ? DUO.green : DUO.red, fontWeight: "800", marginTop: 1 }]}>
+                {(data.tenant.maxStudents - data.stats.activeStudents) > 0
+                  ? `✓ ${data.tenant.maxStudents - data.stats.activeStudents} disponibles`
+                  : "Sin lugares disponibles"}
+              </Text>
+            )}
           </View>
           <Pressable
-            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => setShowCreate(true)}
+            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.8 }, isExpired && { backgroundColor: DUO.textMuted }]}
+            onPress={() => isExpired ? setShowExpiredModal(true) : setShowCreate(true)}
           >
             <Ionicons name="add" size={20} color="#fff" />
             <Text style={styles.createBtnText}>Crear</Text>
@@ -412,7 +431,7 @@ export default function StudentsScreen() {
                   <View style={styles.statsRow}>
                     <MiniStat value={data?.stats.activeStudents ?? 0} label="Activos" emoji="✅" />
                     <MiniStat value={`${data?.stats.avgProgress ?? 0}%`} label="Promedio" emoji="📊" />
-                    <MiniStat value={data?.stats.atRisk ?? 0} label="En riesgo" emoji="⚠️" />
+                    <MiniStat value={data?.stats.atRisk ?? 0} label="Sin actividad" emoji="⚠️" />
                     <MiniStat value={data?.stats.nearExpiry ?? 0} label="Por vencer" emoji="⏳" />
                   </View>
 
@@ -507,9 +526,112 @@ export default function StudentsScreen() {
         tenantSlug={user?.tenantSlug ?? ""}
         onCreated={onRefresh}
       />
+
+      {/* License expired modal */}
+      <LicenseExpiredModal visible={showExpiredModal} onClose={() => setShowExpiredModal(false)} />
     </View>
   )
 }
+
+/* ─── License Expired Modal ──────────────────────────────── */
+function LicenseExpiredModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const bounceAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (!visible) return
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, { toValue: -8, duration: 1000, useNativeDriver: true }),
+        Animated.timing(bounceAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start()
+  }, [visible, bounceAnim])
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={expiredStyles.overlay}>
+        <View style={expiredStyles.card}>
+          {/* Top accent */}
+          <View style={expiredStyles.accent} />
+
+          {/* Animated lock icon */}
+          <Animated.View style={[expiredStyles.iconWrap, { transform: [{ translateY: bounceAnim }] }]}>
+            <Text style={{ fontSize: 44 }}>🔒</Text>
+          </Animated.View>
+
+          <Text style={expiredStyles.title}>Licencia vencida</Text>
+          <Text style={expiredStyles.desc}>
+            Tu acceso ha expirado y no puedes crear ni editar contenido.
+          </Text>
+          <Text style={expiredStyles.highlight}>
+            Contacta a tu administrador para renovar tu licencia
+          </Text>
+
+          {/* Contact box */}
+          <View style={expiredStyles.contactBox}>
+            <Ionicons name="mail-outline" size={16} color={DUO.purple} />
+            <Text style={expiredStyles.contactText}>soporte@candidatic.com</Text>
+          </View>
+
+          <Pressable style={expiredStyles.btn} onPress={onClose}>
+            <Text style={expiredStyles.btnText}>Entendido</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
+const expiredStyles = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center", alignItems: "center", padding: 24,
+  },
+  card: {
+    backgroundColor: "#fff", borderRadius: 28, width: "100%", maxWidth: 360,
+    alignItems: "center", overflow: "hidden",
+    borderWidth: 2, borderColor: DUO.border,
+    borderBottomWidth: 5, borderBottomColor: "#D5D5D5",
+  },
+  accent: {
+    height: 6, width: "100%",
+    backgroundColor: DUO.purple,
+  },
+  iconWrap: {
+    width: 88, height: 88, borderRadius: 22,
+    backgroundColor: "rgba(168,85,247,0.08)",
+    borderWidth: 2, borderColor: "rgba(168,85,247,0.2)",
+    justifyContent: "center", alignItems: "center",
+    marginTop: 28,
+  },
+  title: {
+    fontSize: 20, fontWeight: "900", color: DUO.text,
+    marginTop: 16,
+  },
+  desc: {
+    fontSize: 13, fontWeight: "600", color: DUO.textMuted,
+    textAlign: "center", marginTop: 8, paddingHorizontal: 28,
+  },
+  highlight: {
+    fontSize: 14, fontWeight: "800", color: DUO.purple,
+    textAlign: "center", marginTop: 8, paddingHorizontal: 28,
+  },
+  contactBox: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "rgba(168,85,247,0.06)",
+    borderWidth: 1.5, borderColor: "rgba(168,85,247,0.15)",
+    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10,
+    marginTop: 16,
+  },
+  contactText: { fontSize: 13, fontWeight: "700", color: DUO.purple },
+  btn: {
+    backgroundColor: DUO.purple, borderRadius: 16,
+    paddingVertical: 14, alignItems: "center",
+    width: "80%", marginTop: 20, marginBottom: 28,
+    borderBottomWidth: 4, borderBottomColor: "#7e22ce",
+  },
+  btnText: { color: "#fff", fontSize: 15, fontWeight: "900" },
+})
 
 /* ═══════════════════════════════════════════════════════════
    STYLES

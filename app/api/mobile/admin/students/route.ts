@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
   }))
 
   return NextResponse.json({
-    tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents },
+    tenant: { name: tenant.name, slug: tenant.slug, maxStudents: tenant.maxStudents, expiresAt: tenant.expiresAt?.toISOString() ?? null },
     stats: { activeStudents, avgProgress, atRisk, nearExpiry },
     students,
     availableCourses,
