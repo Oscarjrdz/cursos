@@ -180,12 +180,13 @@ export default function ProfileScreen() {
                   <Text style={styles.avatarText}>{initials}</Text>
                 </View>
               )}
+              {uploading && (
+                <View style={styles.avatarLoadingOverlay}>
+                  <ActivityIndicator size="large" color="white" />
+                </View>
+              )}
               <View style={styles.cameraBtn}>
-                {uploading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Ionicons name="camera" size={14} color="white" />
-                )}
+                <Ionicons name="camera" size={14} color="white" />
               </View>
             </Pressable>
             <Text style={styles.nameText}>{tenantName}</Text>
@@ -243,7 +244,7 @@ export default function ProfileScreen() {
                 <View>
                   <Text style={styles.infoLabel}>Fecha de vencimiento</Text>
                   <Text style={[styles.infoValue, isExpired && { color: DUO.red }]}>
-                    {new Date(data.expiresAt).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}
+                    {new Date(data.expiresAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
                     {isExpired ? "  ⚠️ Vencida" : "  ✅"}
                   </Text>
                 </View>
@@ -384,6 +385,10 @@ const styles = StyleSheet.create({
   avatarImg: {
     width: 80, height: 80, borderRadius: 40,
     borderWidth: 4, borderColor: "#5b21b6",
+  },
+  avatarLoadingOverlay: {
+    position: "absolute", top: 0, left: 0, width: 80, height: 80, borderRadius: 40,
+    backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center",
   },
   cameraBtn: {
     position: "absolute", bottom: 0, right: 0,

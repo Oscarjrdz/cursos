@@ -86,9 +86,10 @@ function MiniStat({ value, label, emoji }: { value: number | string; label: stri
 }
 
 /* ─── Expanded Student Detail ────────────────────────────── */
-function StudentDetail({ student, courses, tenantSlug, token, onRefresh }: {
+function StudentDetail({ student, courses, tenantSlug, token, onRefresh, onEdit }: {
   student: Student; courses: AvailableCourse[]
   tenantSlug: string; token: string | null; onRefresh: () => void
+  onEdit: (student: Student) => void
 }) {
   const [loading, setLoading] = useState(false)
 
@@ -247,6 +248,10 @@ function StudentDetail({ student, courses, tenantSlug, token, onRefresh }: {
 
       {/* Action buttons */}
       <View style={styles.detailActions}>
+        <Pressable style={[styles.detailActionBtn, { borderColor: DUO.blue }]} onPress={() => onEdit(student)}>
+          <Ionicons name="create-outline" size={16} color={DUO.blue} />
+          <Text style={[styles.detailActionText, { color: DUO.blue }]}>Editar</Text>
+        </Pressable>
         <Pressable style={[styles.detailActionBtn, { borderColor: DUO.orange }]} onPress={handleReset}>
           <Ionicons name="refresh-outline" size={16} color={DUO.orange} />
           <Text style={[styles.detailActionText, { color: DUO.orange }]}>Resetear</Text>
@@ -270,10 +275,11 @@ function CreateModal({ visible, onClose, token, tenantSlug, onCreated }: {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  function reset() { setName(""); setEmail(""); setPhone(""); setPassword(""); setError("") }
+  function reset() { setName(""); setEmail(""); setPhone(""); setPassword(""); setError(""); setShowPass(false) }
 
   async function handleCreate() {
     if (!name.trim() || !email.trim()) { setError("Nombre y email son requeridos"); return }
@@ -317,7 +323,19 @@ function CreateModal({ visible, onClose, token, tenantSlug, onCreated }: {
               </View>
               <View style={styles.modalField}>
                 <Text style={styles.modalLabel}>CONTRASEÑA</Text>
-                <TextInput style={styles.modalInput} value={password} onChangeText={setPassword} placeholder="••••••" placeholderTextColor="#c4c9d4" secureTextEntry />
+                <View style={styles.passwordInputWrap}>
+                  <TextInput
+                    style={styles.modalInputNoBorder}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••"
+                    placeholderTextColor="#c4c9d4"
+                    secureTextEntry={!showPass}
+                  />
+                  <Pressable onPress={() => setShowPass(!showPass)} hitSlop={10}>
+                    <Ionicons name={showPass ? "eye-off-outline" : "eye-outline"} size={20} color={DUO.textMuted} />
+                  </Pressable>
+                </View>
               </View>
 
               {error ? (
@@ -342,6 +360,109 @@ function CreateModal({ visible, onClose, token, tenantSlug, onCreated }: {
   )
 }
 
+/* ─── Edit Student Modal ─────────────────────────────────── */
+function EditModal({ visible, student, onClose, token, onUpdated }: {
+  visible: boolean; student: Student | null; onClose: () => void; token: string | null
+  onUpdated: () => void
+}) {
+  const insets = useSafeAreaInsets()
+  const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPass, setShowPass] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (student) {
+      setName(student.name)
+      setPhone(student.phone ?? "")
+      setPassword("")
+      setError("")
+      setShowPass(false)
+    }
+  }, [student, visible])
+
+  async function handleSave() {
+    if (!student) return
+    if (!name.trim()) { setError("Nombre es requerido"); return }
+    setLoading(true); setError("")
+    try {
+      await apiRequest(`/api/mobile/admin/students/${student.id}`, {
+        method: "PUT", token,
+        body: { name: name.trim(), phone: phone.trim() || null, password: password.trim() || null },
+      })
+      onUpdated(); onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al actualizar")
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalKeyboard}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom || 20 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Alumno</Text>
+              <Pressable onPress={onClose} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>✕</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalForm} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalField}>
+                <Text style={styles.modalLabel}>NOMBRE *</Text>
+                <TextInput style={styles.modalInput} value={name} onChangeText={setName} placeholder="Juan Pérez" placeholderTextColor="#c4c9d4" />
+              </View>
+              <View style={styles.modalField}>
+                <Text style={styles.modalLabel}>EMAIL (No editable)</Text>
+                <TextInput style={[styles.modalInput, { backgroundColor: "#F0F0F0", color: DUO.textMuted }]} value={student?.email ?? ""} editable={false} />
+              </View>
+              <View style={styles.modalField}>
+                <Text style={styles.modalLabel}>TELÉFONO</Text>
+                <TextInput style={styles.modalInput} value={phone} onChangeText={setPhone} placeholder="8112345678" placeholderTextColor="#c4c9d4" keyboardType="phone-pad" />
+              </View>
+              <View style={styles.modalField}>
+                <Text style={styles.modalLabel}>NUEVA CONTRASEÑA (Dejar vacío para no cambiar)</Text>
+                <View style={styles.passwordInputWrap}>
+                  <TextInput
+                    style={styles.modalInputNoBorder}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Escribe para cambiar..."
+                    placeholderTextColor="#c4c9d4"
+                    secureTextEntry={!showPass}
+                  />
+                  <Pressable onPress={() => setShowPass(!showPass)} hitSlop={10}>
+                    <Ionicons name={showPass ? "eye-off-outline" : "eye-outline"} size={20} color={DUO.textMuted} />
+                  </Pressable>
+                </View>
+              </View>
+
+              {error ? (
+                <View style={styles.modalError}>
+                  <Ionicons name="alert-circle-outline" size={14} color="#dc2626" />
+                  <Text style={styles.modalErrorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              <Pressable
+                style={[styles.modalCreateBtn, (!name || loading) && { opacity: 0.5 }]}
+                onPress={handleSave}
+                disabled={!name || loading}
+              >
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalCreateText}>GUARDAR CAMBIOS</Text>}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  )
+}
+
 /* ═══════════════════════════════════════════════════════════
    MAIN SCREEN
    ═══════════════════════════════════════════════════════════ */
@@ -355,6 +476,7 @@ export default function StudentsScreen() {
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
   const [showExpiredModal, setShowExpiredModal] = useState(false)
+  const [editStudent, setEditStudent] = useState<Student | null>(null)
 
   const isExpired = data?.tenant.expiresAt ? new Date(data.tenant.expiresAt) < new Date() : false
 
@@ -517,6 +639,7 @@ export default function StudentsScreen() {
                     tenantSlug={user?.tenantSlug ?? ""}
                     token={token}
                     onRefresh={() => { setExpandedId(null); onRefresh() }}
+                    onEdit={setEditStudent}
                   />
                 )}
               </Pressable>
@@ -531,6 +654,14 @@ export default function StudentsScreen() {
         token={token}
         tenantSlug={user?.tenantSlug ?? ""}
         onCreated={onRefresh}
+      />
+
+      <EditModal
+        visible={editStudent !== null}
+        student={editStudent}
+        onClose={() => setEditStudent(null)}
+        token={token}
+        onUpdated={onRefresh}
       />
 
       {/* License expired modal */}
@@ -788,6 +919,15 @@ const styles = StyleSheet.create({
   modalInput: {
     backgroundColor: "#fff", borderWidth: 2, borderColor: DUO.border, borderRadius: 14,
     paddingHorizontal: 14, paddingVertical: 14, fontSize: 15, fontWeight: "600", color: DUO.text,
+  },
+  passwordInputWrap: {
+    flexDirection: "row", alignItems: "center", backgroundColor: "#fff",
+    borderWidth: 2, borderColor: DUO.border, borderRadius: 14,
+    paddingRight: 14,
+  },
+  modalInputNoBorder: {
+    flex: 1, paddingHorizontal: 14, paddingVertical: 14,
+    fontSize: 15, fontWeight: "600", color: DUO.text,
   },
   modalError: {
     flexDirection: "row", alignItems: "center", gap: 6,
