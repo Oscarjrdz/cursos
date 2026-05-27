@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store"
 import { createContext, useContext, useEffect, useState } from "react"
+import { registerPushToken } from "./notifications"
 
 type User = { name: string; tenantSlug: string }
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = JSON.parse(raw) as { token: string; name: string; tenantSlug: string }
           setToken(data.token)
           setUser({ name: data.name, tenantSlug: data.tenantSlug })
+          registerPushToken(data.token)
         }
       })
       .finally(() => setIsLoading(false))
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.setItemAsync(STORE_KEY, JSON.stringify({ token, name, tenantSlug }))
     setToken(token)
     setUser({ name, tenantSlug })
+    registerPushToken(token)
   }
 
   async function logout() {
