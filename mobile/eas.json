@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 18.0.0"
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -22,8 +23,18 @@
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://knowledge.candidatic.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "oscarjrdz@gmail.com",
+        "ascAppId": "6774471447",
+        "appleTeamId": "C96CVWWJ32"
       }
     }
   }

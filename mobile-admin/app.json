@@ -16,7 +16,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.candidatic.admin",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -41,6 +44,13 @@
         "expo-image-picker",
         {
           "photosPermission": "Necesitamos acceso a tus fotos para el logo de la empresa."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#7c3aed"
         }
       ]
     ],

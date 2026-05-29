@@ -18,9 +18,10 @@ model Tenant {
   maxStudents Int          @default(50)
   status      TenantStatus @default(ACTIVE)
   expiresAt     DateTime?
-  adminPhone    String?
-  adminPassword String?
-  createdAt     DateTime     @default(now())
+  adminPhone     String?
+  adminPassword  String?
+  adminPushToken String?
+  createdAt      DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
   users         User[]

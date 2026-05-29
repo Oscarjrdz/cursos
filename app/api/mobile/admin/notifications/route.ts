@@ -12,21 +12,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 
-  const { title, body, tenantId } = await req.json()
+  const { title, body, tenantId, targetType } = await req.json()
   if (!title || !body) {
     return NextResponse.json({ error: "Título y mensaje son requeridos" }, { status: 400 })
   }
 
-  const students = await prisma.user.findMany({
-    where: {
-      role: "STUDENT",
-      pushToken: { not: null },
-      ...(tenantId ? { tenantId } : {}),
-    },
-    select: { pushToken: true },
-  })
+  let tokens: string[] = []
 
-  const tokens = students.map((s) => s.pushToken).filter(Boolean) as string[]
+  if (targetType === "admins") {
+    const tenants = await prisma.tenant.findMany({
+      where: {
+        adminPushToken: { not: null },
+        ...(tenantId ? { id: tenantId } : {}),
+      },
+      select: { adminPushToken: true },
+    })
+    tokens = tenants.map((t) => t.adminPushToken).filter(Boolean) as string[]
+  } else {
+    const students = await prisma.user.findMany({
+      where: {
+        role: "STUDENT",
+        pushToken: { not: null },
+        ...(tenantId ? { tenantId } : {}),
+      },
+      select: { pushToken: true },
+    })
+    tokens = students.map((s) => s.pushToken).filter(Boolean) as string[]
+  }
+
   if (tokens.length === 0) return NextResponse.json({ ok: true, sent: 0 })
 
   await sendPushNotification({ to: tokens, title, body })

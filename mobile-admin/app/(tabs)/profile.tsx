@@ -58,6 +58,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showExpiredModal, setShowExpiredModal] = useState(false)
+  const [pendingLogo, setPendingLogo] = useState<{ uri: string; base64: string; mimeType: string } | null>(null)
 
   const isExpired = data?.expiresAt ? new Date(data.expiresAt) < new Date() : false
 
@@ -90,19 +91,24 @@ export default function ProfileScreen() {
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.2,
+      quality: 0.8,
       base64: true,
     })
     if (result.canceled) return
     const asset = result.assets[0]
     const base64 = asset.base64
     if (!base64) { Alert.alert("Error", "No se pudo leer la imagen"); return }
+    setPendingLogo({ uri: asset.uri, base64, mimeType: asset.mimeType ?? "image/jpeg" })
+  }
 
+  async function handleUploadLogo() {
+    if (!pendingLogo) return
+    const { base64, mimeType } = pendingLogo
     setUploading(true)
+    setPendingLogo(null)
     try {
       const sizeInBytes = base64.length * 0.75
       if (sizeInBytes > 3_000_000) throw new Error("La imagen es muy grande. Intenta con una más pequeña.")
-      const mimeType = asset.mimeType ?? "image/jpeg"
       const base_ = getApiBase()
       const res = await fetch(`${base_}/api/mobile/admin/profile`, {
         method: "PATCH",
@@ -297,11 +303,44 @@ export default function ProfileScreen() {
         </ScrollView>
       )}
 
+      {/* Logo preview modal */}
+      <Modal visible={!!pendingLogo} transparent animationType="fade">
+        <View style={logoStyles.overlay}>
+          <View style={logoStyles.card}>
+            <Text style={logoStyles.title}>Vista previa del logo</Text>
+            {pendingLogo && (
+              <Image source={{ uri: pendingLogo.uri }} style={logoStyles.preview} />
+            )}
+            <View style={logoStyles.actions}>
+              <Pressable style={logoStyles.cancelBtn} onPress={() => setPendingLogo(null)}>
+                <Text style={logoStyles.cancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable style={logoStyles.uploadBtn} onPress={handleUploadLogo}>
+                <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
+                <Text style={logoStyles.uploadText}>Subir logo</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* License expired modal */}
       <LicenseExpiredModal visible={showExpiredModal} onClose={() => setShowExpiredModal(false)} />
     </View>
   )
 }
+
+const logoStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 24 },
+  card: { backgroundColor: "#fff", borderRadius: 24, padding: 24, width: "100%", maxWidth: 340, alignItems: "center", gap: 20 },
+  title: { fontSize: 17, fontWeight: "900", color: DUO.text },
+  preview: { width: 160, height: 160, borderRadius: 80, borderWidth: 4, borderColor: DUO.border },
+  actions: { flexDirection: "row", gap: 12, width: "100%" },
+  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: "center", backgroundColor: "#F0F0F0" },
+  cancelText: { fontSize: 14, fontWeight: "700", color: DUO.textMuted },
+  uploadBtn: { flex: 1.5, flexDirection: "row", gap: 8, paddingVertical: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: DUO.purple, borderBottomWidth: 3, borderBottomColor: "#7e22ce" },
+  uploadText: { fontSize: 14, fontWeight: "800", color: "#fff" },
+})
 
 /* ─── License Expired Modal ──────────────────────────────── */
 function LicenseExpiredModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
