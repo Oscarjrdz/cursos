@@ -44,3 +44,10 @@ next-env.d.ts
 prisma/dev.db
 .claude/
 .env*.local
+
+# build artifacts
+*.ipa
+*.apk
+app.json
+eas.json
+mobile/google-services.json
